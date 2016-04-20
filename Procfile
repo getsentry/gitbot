@@ -1,1 +1,1 @@
-web: gunicorn dochook:app --log-file -
+web: gunicorn deployhook:app --log-file -
