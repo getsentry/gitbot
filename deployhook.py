@@ -57,7 +57,7 @@ def ssh_environment():
     yield exec_file
 
 
-def bump_sentry_version(commit_sha):
+def bump_version(commit_sha, script):
     with ssh_environment() as ssh_executable:
         repo_root = tempfile.mkdtemp()
         def cmd(*args, **opts):
@@ -70,7 +70,7 @@ def bump_sentry_version(commit_sha):
             DEPLOY_REPO, repo_root, cwd=None)
         cmd('git', 'config', 'user.name', COMMITTER_NAME)
         cmd('git', 'config', 'user.email', COMMITTER_EMAIL)
-        cmd('bin/bump-sentry', commit_sha)
+        cmd(script, commit_sha)
 
         for x in xrange(5):
             if cmd('git', 'push', 'origin', DEPLOY_BRANCH) == 0:
@@ -90,11 +90,18 @@ def index():
         return jsonify(updated=False,
                        reason='Commit against untracked branch.')
 
+    repo = data['repository']['full_name']
     head_commit = data.get('head_commit')
-    sentry_commit_sha = (head_commit or {}).get('id')
+    ref_sha = (head_commit or {}).get('id')
 
-    if sentry_commit_sha is not None:
-        updated, reason = bump_sentry_version(sentry_commit_sha)
+    if ref_sha is not None:
+        if repo == 'getsentry/sentry':
+            updated, reason = bump_version(ref_sha, 'bin/bump-sentry')
+        elif repo == 'getsentry/sentry-plugins':
+            updated, reason = bump_version(ref_sha, 'bin/bump-plugins')
+        else:
+            updated = False
+            reason = 'Unknown repository'
         return jsonify(updated=updated, reason=reason)
 
     return jsonify(updated=False, reason='Commit not relevant for deploy sync.')
