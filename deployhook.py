@@ -103,7 +103,8 @@ def index():
         if repo == 'getsentry/sentry':
             updated, reason = bump_version('bin/bump-sentry', ref_sha)
         elif repo in PLUGIN_REPOS:
-            updated, reason = bump_version('bin/bump-plugins', repo, ref_sha)
+            args = ['--repo', repo, ref_sha]
+            updated, reason = bump_version('bin/bump-plugins', *args)
         else:
             updated = False
             reason = 'Unknown repository'
