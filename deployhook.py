@@ -42,6 +42,11 @@ l+nAD0p19zmc+PZzGZtbiLjD/zya0sE6+JguKaVw9iNQIlyeWXPpIpWJb4O9SbTM
 -----END RSA PRIVATE KEY-----
 '''
 
+PLUGIN_REPOS = [
+    'getsentry/sentry-plugins',
+    'getsentry/sentry-auth-saml2',
+]
+
 
 @contextmanager
 def ssh_environment():
@@ -57,7 +62,7 @@ def ssh_environment():
     yield exec_file
 
 
-def bump_version(commit_sha, script):
+def bump_version(script, *args):
     with ssh_environment() as ssh_executable:
         repo_root = tempfile.mkdtemp()
         def cmd(*args, **opts):
@@ -70,14 +75,14 @@ def bump_version(commit_sha, script):
             DEPLOY_REPO, repo_root, cwd=None)
         cmd('git', 'config', 'user.name', COMMITTER_NAME)
         cmd('git', 'config', 'user.email', COMMITTER_EMAIL)
-        cmd(script, commit_sha)
+        cmd(script, *args)
 
         for x in xrange(5):
             if cmd('git', 'push', 'origin', DEPLOY_BRANCH) == 0:
                 break
             cmd('git', 'pull', '--rebase', 'origin', DEPLOY_BRANCH)
 
-        return True, 'Updated to %s' % commit_sha
+        return True, 'Executed: {}'.format(' '.join([script] + args))
 
 
 @app.route('/', methods=['POST'])
@@ -96,9 +101,10 @@ def index():
 
     if ref_sha is not None:
         if repo == 'getsentry/sentry':
-            updated, reason = bump_version(ref_sha, 'bin/bump-sentry')
-        elif repo == 'getsentry/sentry-plugins':
-            updated, reason = bump_version(ref_sha, 'bin/bump-plugins')
+            updated, reason = bump_version('bin/bump-sentry', ref_sha)
+        elif repo in PLUGIN_REPOS:
+            args = ['--repo', repo, ref_sha]
+            updated, reason = bump_version('bin/bump-plugins', *args)
         else:
             updated = False
             reason = 'Unknown repository'
