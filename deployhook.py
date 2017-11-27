@@ -45,6 +45,8 @@ l+nAD0p19zmc+PZzGZtbiLjD/zya0sE6+JguKaVw9iNQIlyeWXPpIpWJb4O9SbTM
 PLUGIN_REPOS = [
     'getsentry/sentry-plugins',
     'getsentry/sentry-auth-saml2',
+    'getsentry/sentry-auth-google',
+    'getsentry/sentry-auth-github',
 ]
 
 
