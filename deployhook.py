@@ -113,3 +113,8 @@ def index():
         return jsonify(updated=updated, reason=reason)
 
     return jsonify(updated=False, reason='Commit not relevant for deploy sync.')
+
+
+if not app.debug:
+    import logging
+    app.logger.addHandler(logging.StreamHandler())
