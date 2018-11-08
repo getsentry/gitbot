@@ -136,7 +136,7 @@ def process_pull_request():
     """Handle "pull_request" events from PRs with the deploy marker set"""
     data = request.get_json()
 
-    if data.get('action') != 'synchronize':
+    if data.get('action') not in ['synchronize', 'opened']:
         return jsonify(updated=False, reason='Invalid action for pull_request event.')
 
     if data['repository']['full_name'] != SENTRY_REPO:
