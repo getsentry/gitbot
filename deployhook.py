@@ -116,12 +116,12 @@ def process_push():
     head_commit = data.get('head_commit', {})
     ref_sha = head_commit.get('id')
 
-    # Committer will be displayed as author in getsentry/getsentry
-    committer = head_commit.get('committer', {})
-    committer_name = committer.get('name')
-    committer_email = committer.get('email')
-    if committer_name and committer_email:
-        author = "{} <{}>".format(committer_name, committer_email)
+    # Original author will be displayed as author in getsentry/getsentry
+    author_data = head_commit.get('author', {})
+    author_name = author_data.get('name')
+    author_email = author_data.get('email')
+    if author_name and author_email:
+        author = "{} <{}>".format(author_name, author_email)
     else:
         author = None
 
