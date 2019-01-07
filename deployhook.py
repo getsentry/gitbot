@@ -113,13 +113,26 @@ def process_push():
         return jsonify(updated=False, reason='Commit against untracked branch.')
 
     repo = data['repository']['full_name']
-    head_commit = data.get('head_commit')
-    ref_sha = (head_commit or {}).get('id')
+    head_commit = data.get('head_commit', {})
+    ref_sha = head_commit.get('id')
+
+    # Committer will be displayed as author in getsentry/getsentry
+    committer = head_commit.get('committer', {})
+    committer_name = committer.get('name')
+    committer_email = committer.get('email')
+    if committer_name and committer_email:
+        author = "{} <{}>".format(committer_name, committer_email)
+    else:
+        author = None
 
     if ref_sha is not None:
         if repo == SENTRY_REPO:
+            args = [ref_sha]
+            if author is not None:
+                args += ['--author', author]
             updated, reason = bump_version(
-                DEPLOY_BRANCH, 'bin/bump-sentry', ref_sha)
+                DEPLOY_BRANCH, 'bin/bump-sentry', *args
+            )
         elif repo in PLUGIN_REPOS:
             args = ['--repo', repo, ref_sha]
             updated, reason = bump_version(
