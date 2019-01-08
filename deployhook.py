@@ -126,17 +126,19 @@ def process_push():
         author = None
 
     if ref_sha is not None:
+        args = [ref_sha]
+        if author is not None:
+            args += ['--author', author]
+
         if repo == SENTRY_REPO:
-            args = [ref_sha]
-            if author is not None:
-                args += ['--author', author]
             updated, reason = bump_version(
                 DEPLOY_BRANCH, 'bin/bump-sentry', *args
             )
         elif repo in PLUGIN_REPOS:
-            args = ['--repo', repo, ref_sha]
+            args += ['--repo', repo]
             updated, reason = bump_version(
-                DEPLOY_BRANCH, 'bin/bump-plugins', *args)
+                DEPLOY_BRANCH, 'bin/bump-plugins', *args
+            )
         else:
             updated = False
             reason = 'Unknown repository'
