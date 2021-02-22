@@ -94,7 +94,7 @@ def bump_version(branch, script, *args):
         cmd('git', 'config', 'user.name', COMMITTER_NAME)
         cmd('git', 'config', 'user.email', COMMITTER_EMAIL)
         cmd(script, *args)
-        for _ in xrange(5):
+        for _ in range(5):
             if cmd('git', 'push', 'origin', branch) == 0:
                 break
             cmd('git', 'pull', '--rebase', 'origin', branch)
