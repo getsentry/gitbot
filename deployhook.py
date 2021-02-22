@@ -1,5 +1,6 @@
 import hmac
 import hashlib
+import base64
 import os
 import tempfile
 import subprocess
