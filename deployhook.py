@@ -99,7 +99,7 @@ def bump_version(branch, script, *args):
                 break
             cmd('git', 'pull', '--rebase', 'origin', branch)
 
-        return True, 'Executed: {}'.format(' '.join([script] + list(args)))
+        return True, 'Executed: {!r}'.format([script] + list(args))
 
 
 def process_push():
