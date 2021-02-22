@@ -23,7 +23,7 @@ COMMITTER_EMAIL = 'bot@getsentry.com'
 SSH_KEY = '''
 -----BEGIN OPENSSH PRIVATE KEY-----
 %s
------END RSA PRIVATE KEY-----
+-----END OPENSSH PRIVATE KEY-----
 ''' % os.environ['DEPLOY_SSH_KEY']
 
 PLUGIN_REPOS = [
