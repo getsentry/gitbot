@@ -184,7 +184,7 @@ def process_pull_request():
 def index():
     if not IS_DEV:
         # Validate payload signature
-        signature = hmac.new(GITHUB_WEBHOOK_SECRET,
+        signature = hmac.new(GITHUB_WEBHOOK_SECRET.encode('utf-8'),
                              request.data, hashlib.sha1).hexdigest()
         if not hmac.compare_digest(signature, str(request.headers.get('X-Hub-Signature', '').replace('sha1=', ''))):
             return jsonify(updated=False, reason='Cannot validate payload signature.')
