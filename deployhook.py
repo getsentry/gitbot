@@ -20,7 +20,7 @@ DEPLOY_REPO = 'git@github.com:getsentry/getsentry'
 DEPLOY_BRANCH = 'master'
 COMMITTER_NAME = 'Sentry Bot'
 COMMITTER_EMAIL = 'bot@getsentry.com'
-SSH_KEY = os.environ['DEPLOY_SSH_KEY']
+SSH_KEY = base64.b64decode(os.environ['DEPLOY_SSH_KEY']).encode('utf-8')
 
 PLUGIN_REPOS = [
     'getsentry/sentry-plugins',
