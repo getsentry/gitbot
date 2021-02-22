@@ -65,14 +65,14 @@ def ssh_environment():
     key_file = tempfile.mktemp()
     with open(key_file, 'w') as f:
         f.write(SSH_KEY)
-    os.chmod(key_file, 0600)
+    os.chmod(key_file, 0o600)
 
     exec_file = tempfile.mktemp()
     with open(exec_file, 'w') as f:
         f.write('''#!/bin/sh
         ssh -i "%s" -o StrictHostKeyChecking=no "$@"
         ''' % key_file)
-    os.chmod(exec_file, 0700)
+    os.chmod(exec_file, 0o700)
     yield exec_file
 
 
