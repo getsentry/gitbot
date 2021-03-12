@@ -23,13 +23,6 @@ COMMITTER_NAME = 'Sentry Bot'
 COMMITTER_EMAIL = 'bot@getsentry.com'
 SSH_KEY = os.environ['DEPLOY_SSH_KEY'] + "\n"
 
-PLUGIN_REPOS = [
-    'getsentry/sentry-plugins',
-    'getsentry/sentry-auth-saml2',
-    'getsentry/sentry-auth-google',
-    'getsentry/sentry-auth-github',
-]
-
 GITHUB_WEBHOOK_SECRET = os.environ.get('GITHUB_WEBHOOK_SECRET')
 
 
@@ -106,11 +99,6 @@ def process_push():
         if repo == SENTRY_REPO:
             updated, reason = bump_version(
                 DEPLOY_BRANCH, 'bin/bump-sentry', *args
-            )
-        elif repo in PLUGIN_REPOS:
-            args += ['--repo', repo]
-            updated, reason = bump_version(
-                DEPLOY_BRANCH, 'bin/bump-plugins', *args
             )
         else:
             updated = False
