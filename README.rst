@@ -4,9 +4,14 @@ Sentry Deploy Sync Hook
 This repo contains a hook for updating the reference in getsentry
 to sentry automatically.
 
-It's deployed to this heroku app::
+Logging: TODO link to stackdriver
+Sentry Project : TODO
 
-    sentry-deploy-sync-hook.herokuapp.com
+Deployment
+----------
+
+TODO
+
 
 Non-master Branches
 -------------------
