@@ -1,6 +1,11 @@
 FROM python:3.8-slim
 
-COPY requirements.txt .
+WORKDIR /key
+# Git ignores this file
+COPY private_ssh_key .
+
+WORKDIR /app
+COPY requirements.txt deployhook.py /app/
 RUN pip install --disable-pip-version-check --no-cache-dir -r requirements.txt
 
 # 1 worker, 4 worker threads should be more than enough.

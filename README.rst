@@ -1,17 +1,29 @@
 Sentry Deploy Sync Hook
 =======================
 
-This repo contains a hook for updating the reference in getsentry
-to sentry automatically.
+This repo contains a hook for updating the reference in getsentry to sentry automatically.
 
-Logging: TODO link to stackdriver
-Sentry Project : TODO
+Requirements
+------------
+- Docker
 
-Deployment
-----------
+Development
+-----------
 
-TODO
+Copy the keys you want the service to use into the `key` directory which is ignored by Git.
 
+Build image and run the project:
+
+```shell
+docker build -t getsentry/sync-hook .
+docker run -i getsentry/sync-hook
+```
+
+If you want to access a container to tinker with:
+
+```shell
+docker run -it --rm getsentry/sync-hook bash
+```
 
 Non-master Branches
 -------------------
