@@ -1,8 +1,7 @@
 FROM python:3.8-slim
 
-RUN pip --disable-pip-version-check --no-cache-dir install \
-    'Flask==1.1.2' \
-    'gunicorn==20.0.4'
+COPY requirements.txt .
+RUN pip install --disable-pip-version-check --no-cache-dir -r requirements.txt
 
 # 1 worker, 4 worker threads should be more than enough.
 # --worker-class gthread is automatically set if --threads > 1.
