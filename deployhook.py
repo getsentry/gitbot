@@ -21,17 +21,15 @@ DEPLOY_REPO = "git@github.com:getsentry/getsentry"
 DEPLOY_BRANCH = "master"
 COMMITTER_NAME = "Sentry Bot"
 COMMITTER_EMAIL = "bot@getsentry.com"
-SSH_KEY = os.environ["DEPLOY_SSH_KEY"] + "\n"
 
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 
 
 @contextmanager
 def ssh_environment():
-    key_file = tempfile.mktemp()
-    with open(key_file, "w") as f:
-        f.write(SSH_KEY)
-    os.chmod(key_file, 0o600)
+    # XXX: This is hardcoding the path on the Docker image, thus, affecting execution outside of Docker
+    key_file = os.path("/key/private_ssh_key")
+
     exec_file = tempfile.mktemp()
     with open(exec_file, "w") as f:
         f.write(
