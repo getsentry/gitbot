@@ -5,8 +5,12 @@ WORKDIR /key
 COPY private_ssh_key .
 
 WORKDIR /app
-COPY requirements.txt deployhook.py /app/
+# Re-create the requirements layer if the requirements change
+COPY requirements.txt /app/
 RUN pip install --disable-pip-version-check --no-cache-dir -r requirements.txt
+
+# Re-create the code layer if the file changes
+COPY deployhook.py /app/
 
 # 1 worker, 4 worker threads should be more than enough.
 # --worker-class gthread is automatically set if --threads > 1.
