@@ -9,6 +9,7 @@ services:
       dockerfile: Dockerfile
     image: treeherder-backend
     environment:
+      - DRY_RUN=${DRY_RUN:-False}
       - FLASK_APP=deployhook.py
       - FLASK_ENV=development
       - FLASK_RUN_HOST=0.0.0.0

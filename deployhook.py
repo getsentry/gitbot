@@ -22,13 +22,23 @@ COMMITTER_EMAIL = "bot@getsentry.com"
 
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 
+DRY_RUN = os.environ.get("DRY_RUN")
+if DRY_RUN:
+    app.logger.info("Dry run mode: on")
+else:
+    app.logger.info("Dry run mode: off")
+
 
 def bump_version(branch, script, *args):
     repo_root = tempfile.mkdtemp()
 
     def cmd(*args, **opts):
         opts.setdefault("cwd", repo_root)
-        app.logger.info(" ".join(args))
+        try:
+            app.logger.info(" ".join(args))
+        except Exception:
+            # XXX: Report via Sentry later on
+            app.logger.warning("Investigate why we could not log the args.")
         return subprocess.Popen(list(args), **opts).wait()
 
     # The branch has to be created manually in getsentry/getsentry!
@@ -51,8 +61,13 @@ def bump_version(branch, script, *args):
     cmd("git", "config", "user.name", COMMITTER_NAME)
     cmd("git", "config", "user.email", COMMITTER_EMAIL)
     cmd(script, *args)
+    push_args = None
+    if DRY_RUN:
+        push_args = ("git", "push", "origin", "--dry-run", branch)
+    else:
+        push_args = ("git", "push", "origin", branch)
     for _ in range(5):
-        if cmd("git", "push", "origin", branch) == 0:
+        if cmd(*push_args) == 0:
             break
         cmd("git", "pull", "--rebase", "origin", branch)
 
