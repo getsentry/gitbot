@@ -12,6 +12,7 @@ services:
       - FLASK_APP=deployhook.py
       - FLASK_ENV=development
       - FLASK_RUN_HOST=0.0.0.0
+      - DEPLOY_REPO=${DEPLOY_REPO:-git@github.com:getsentry/sentry-deploy-sync-hook-test-repo}
     command: flask run
     volumes:
       - .:/app

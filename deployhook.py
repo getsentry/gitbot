@@ -1,12 +1,10 @@
 import hmac
 import hashlib
-import base64
 import os
 import tempfile
 import subprocess
 from contextlib import contextmanager
 from flask import Flask, request, jsonify
-
 
 app = Flask(__name__)
 
@@ -17,7 +15,7 @@ SENTRY_REPO = "{}/sentry".format(GETSENTRY_OWNER)
 
 DEPLOY_MARKER = "#sync-getsentry"
 
-DEPLOY_REPO = "git@github.com:getsentry/getsentry"
+DEPLOY_REPO = os.environ.get("DEPLOY_REPO", "git@github.com:getsentry/getsentry")
 DEPLOY_BRANCH = "master"
 COMMITTER_NAME = "Sentry Bot"
 COMMITTER_EMAIL = "bot@getsentry.com"
@@ -25,59 +23,40 @@ COMMITTER_EMAIL = "bot@getsentry.com"
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 
 
-@contextmanager
-def ssh_environment():
-    # XXX: This is hardcoding the path on the Docker image, thus, affecting execution outside of Docker
-    key_file = os.path("/key/private_ssh_key")
-
-    exec_file = tempfile.mktemp()
-    with open(exec_file, "w") as f:
-        f.write(
-            """#!/bin/sh
-        ssh -i "%s" -o StrictHostKeyChecking=no "$@"
-        """
-            % key_file
-        )
-    os.chmod(exec_file, 0o700)
-    yield exec_file
-
-
 def bump_version(branch, script, *args):
-    with ssh_environment() as ssh_executable:
-        repo_root = tempfile.mkdtemp()
+    repo_root = tempfile.mkdtemp()
 
-        def cmd(*args, **opts):
-            opts.setdefault("cwd", repo_root)
-            env = opts.setdefault("env", {})
-            env["GIT_SSH"] = ssh_executable
-            return subprocess.Popen(list(args), **opts).wait()
+    def cmd(*args, **opts):
+        opts.setdefault("cwd", repo_root)
+        app.logger.info(" ".join(args))
+        return subprocess.Popen(list(args), **opts).wait()
 
-        # The branch has to be created manually in getsentry/getsentry!
-        if (
-            cmd(
-                "git",
-                "clone",
-                "--depth",
-                "1",
-                "-b",
-                branch,
-                DEPLOY_REPO,
-                repo_root,
-                cwd=None,
-            )
-            != 0
-        ):
-            return False, "Cannot clone branch {} from {}.".format(branch, DEPLOY_REPO)
+    # The branch has to be created manually in getsentry/getsentry!
+    if (
+        cmd(
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "-b",
+            branch,
+            DEPLOY_REPO,
+            repo_root,
+            cwd=None,
+        )
+        != 0
+    ):
+        return False, "Cannot clone branch {} from {}.".format(branch, DEPLOY_REPO)
 
-        cmd("git", "config", "user.name", COMMITTER_NAME)
-        cmd("git", "config", "user.email", COMMITTER_EMAIL)
-        cmd(script, *args)
-        for _ in range(5):
-            if cmd("git", "push", "origin", branch) == 0:
-                break
-            cmd("git", "pull", "--rebase", "origin", branch)
+    cmd("git", "config", "user.name", COMMITTER_NAME)
+    cmd("git", "config", "user.email", COMMITTER_EMAIL)
+    cmd(script, *args)
+    for _ in range(5):
+        if cmd("git", "push", "origin", branch) == 0:
+            break
+        cmd("git", "pull", "--rebase", "origin", branch)
 
-        return True, "Executed: {!r}".format([script] + list(args))
+    return True, "Executed: {!r}".format([script] + list(args))
 
 
 def process_push():
@@ -87,6 +66,7 @@ def process_push():
     )
 
     data = request.get_json()
+    app.logger.info(data)
 
     if data.get("ref") not in branches:
         return jsonify(updated=False, reason="Commit against untracked branch.")
@@ -176,7 +156,6 @@ def index():
         return process_pull_request()
     else:
         return jsonify(updated=False, reason="Unsupported event type.")
-
 
 if not app.debug:
     import logging

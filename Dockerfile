@@ -1,4 +1,4 @@
-FROM python:3.8-slim
+FROM python:3.8.10-slim
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git ssh && \
@@ -7,6 +7,7 @@ RUN apt-get update && \
 WORKDIR /key
 # Git ignores this file
 COPY private_ssh_key .
+# COPY ssh_config /root/.ssh/config
 
 WORKDIR /app
 # Re-create the requirements layer if the requirements change
@@ -15,6 +16,9 @@ RUN pip install --disable-pip-version-check --no-cache-dir -r requirements.txt
 
 # Re-create the code layer if the file changes
 COPY deployhook.py /app/
+
+# Move this later above
+COPY ssh_config /root/.ssh/config
 
 # 1 worker, 4 worker threads should be more than enough.
 # --worker-class gthread is automatically set if --threads > 1.
