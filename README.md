@@ -15,17 +15,16 @@ Github webhook: TBD
 
 ## Development
 
-Build image and run the project:
+We use docker compose to help with live code reloading:
 
 ```shell
-docker build -t getsentry/sync-hook .
-docker run -e FLASK_ENV=development -P --rm -i getsentry/sync-hook
+docker compose up --build
 ```
 
 If you want to access a container to tinker with it:
 
 ```shell
-docker run -e FLASK_ENV=development -P --rm -it getsentry/sync-hook bash
+docker compose run backend bash
 ```
 
 ## Deployment

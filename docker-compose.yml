@@ -1,0 +1,19 @@
+version: "3"
+# This docker compose file is to help local development by allowing live code
+# reloading with a volume mount
+services:
+  backend:
+    container_name: backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: treeherder-backend
+    environment:
+      - FLASK_APP=deployhook.py
+      - FLASK_ENV=development
+      - FLASK_RUN_HOST=0.0.0.0
+    command: flask run
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
