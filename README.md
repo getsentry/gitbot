@@ -6,23 +6,31 @@ This repo contains a hook for updating the reference in getsentry to sentry auto
 
 - Docker
 
-## Development
+## Pre-development
 
 Create [a new SSH key](https://github.com/settings/keys) for this project, place the key in this repo as `private_ss_key`
 (Git will ignore it) in order to get copied into the Docker image.
+
+Github webhook: TBD
+
+## Development
 
 Build image and run the project:
 
 ```shell
 docker build -t getsentry/sync-hook .
-docker run -i getsentry/sync-hook
+docker run -e FLASK_ENV=development -P --rm -i getsentry/sync-hook
 ```
 
-If you want to access a container to tinker with:
+If you want to access a container to tinker with it:
 
 ```shell
-docker run -it --rm getsentry/sync-hook bash
+docker run -e FLASK_ENV=development -P --rm -it getsentry/sync-hook bash
 ```
+
+## Deployment
+
+TBD
 
 ## Non-master Branches
 
