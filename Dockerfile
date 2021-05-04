@@ -1,5 +1,9 @@
 FROM python:3.8-slim
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git ssh && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /key
 # Git ignores this file
 COPY private_ssh_key .
