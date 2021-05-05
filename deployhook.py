@@ -78,14 +78,17 @@ def bump_version(branch, script, *args):
 
 def process_push():
     """Handle "push" events to master branch"""
+    # On what occassions would we want to use request.args.get("branches")?
+    # Pushes to master and test-branch will be acted on
     branches = set(
-        "refs/heads/" + x for x in (request.args.get("branches") or "master").split(",")
+        "refs/heads/" + x for x in (request.args.get("branches") or "master,test-branch").split(",")
     )
 
     data = request.get_json()
     app.logger.info(data)
 
     if data.get("ref") not in branches:
+        app.logger.info(f'{data.get("ref")} not in {branches}')
         return jsonify(updated=False, reason="Commit against untracked branch.")
 
     repo = data["repository"]["full_name"]
@@ -106,11 +109,13 @@ def process_push():
         if author is not None:
             args += ["--author", author]
 
-        if repo == SENTRY_REPO:
+        # Support Sentry fork when running on development mode
+        if (not IS_DEV and repo == SENTRY_REPO) or (IS_DEV and data["repository"]["name"] == "sentry"):
             updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-sentry", *args)
         else:
             updated = False
             reason = "Unknown repository"
+        app.logger.info(f"We found some issues: {reason}")
         return jsonify(updated=updated, reason=reason)
 
     return jsonify(updated=False, reason="Commit not relevant for deploy sync.")
