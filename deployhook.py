@@ -3,6 +3,7 @@ import hashlib
 import os
 import tempfile
 import subprocess
+from distutils import util
 from contextlib import contextmanager
 from flask import Flask, request, jsonify
 
@@ -22,11 +23,12 @@ COMMITTER_EMAIL = "bot@getsentry.com"
 
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 
-DRY_RUN = os.environ.get("DRY_RUN")
+DRY_RUN = not bool(util.strtobool(os.environ.get("DRY_RUN", False)))
 if DRY_RUN:
     app.logger.info("Dry run mode: on")
 else:
-    app.logger.info("Dry run mode: off")
+    app.logger.info("Dry run mode: *OFF* <--!")
+    app.logger.info(f"Code bumps will be pushed to {DEPLOY_BRANCH} on {DEPLOY_REPO}")
 
 
 def bump_version(branch, script, *args):
