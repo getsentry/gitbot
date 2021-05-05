@@ -1,6 +1,15 @@
 # Sentry Deploy Sync Hook
 
-This repo contains a hook for updating the reference in getsentry to sentry automatically.
+This repo contains a hook for updating the reference in getsentry to sentry automatically. There's two ways that this happens.
+
+If a push happens on Sentry's master, this will clone getsentry and call `bin/bump-sentry` in order to update
+the Sentry's sha on getsentry.
+
+If a PR is opened/synchronized on Sentry and `#sync-getsentry` appears in the first message of the PR, the bot will try to bump the version on getsentry for a branch with the same name as the one on Sentry. This keeps both PRs synchronized and is useful for staging deployments. More details [here](https://www.notion.so/sentry/sync-getsentry-95a32dabe03b467bb3ec5fa0e20491e5).
+
+## Deployment
+
+TBD
 
 ## Requirements
 
@@ -21,7 +30,7 @@ We use docker compose to help with live code reloading (since we mount a volume 
 docker compose up --build
 ```
 
-To test the API you can use `curl`:
+To test the push API you can use `curl`:
 
 ```shell
 curl \
@@ -32,13 +41,24 @@ curl \
     http://0.0.0.0:5000
 ```
 
+To test the Github PR API you can type this:
+
+```shell
+curl \
+    --header "Content-Type: application/json" \
+    --header 'X-GitHub-Event: pull_request' \
+    --request POST \
+    --data '{}' \
+    http://0.0.0.0:5000
+```
+
 ### Running the pipeline locally
 
 **NOTE**: The development set up will not commit code unless you set `DRY_RUN` env to False.
 
 **NOTE**: We assume you have the backend running on your localhost (see steps on section above).
 
-**NOTE**: By default, the development set up will push changes to [sentry-deploy-sync-hook-test-repo](https://github.com/getsentry/sentry-deploy-sync-hook-test-repo). To test against another repo you can use the env variable `DEPLOY_REPO` in order to point to a different repo you have write access to. In order for this to work, such repo needs `bin/bump-sentry` and `cloudbuild.yaml` from the getsentry repo.
+**NOTE**: By default, the development set up will push changes to [getsentry-test-repo](https://github.com/getsentry/getsentry-test-repo). To test against another repo you can use the env variable `DEPLOY_REPO` in order to point to a different repo you have write access to. In order for this to work, such repo needs `bin/bump-sentry` and `cloudbuild.yaml` from the getsentry repo.
 
 In order to test Github changes through your local set up you need to follow these steps:
 
@@ -51,17 +71,19 @@ In order to test Github changes through your local set up you need to follow the
   - Choose `application/json` for `Content type`
   - For a production set-up you will want to define a [Secret](https://docs.github.com/en/developers/webhooks-and-events/creating-webhooks#secret)
     - TODO: Verify we have code that checks `X-Hub-Signature` and `X-Hub-Signature-256`
-  - Create a branch named `test-branch` and make sure you set the upstream to your fork
-  - From here on, pushes to that branch (or `master`) will be processed by the backend
-  - You can use this command: `echo "$(date)" > file && git add file && git commit -m "Foo" --no-verify && git push`
+  - Choose `Let me select individual events` and select: `Pull requests` and `Pushes`
 
-## Deployment
+**NOTE**: You can inspect the contents of Github webhook events in the sample place where you edit the webhook. You can re-deliver and see the contents of the response.
 
-TBD
+Testing pushes:
 
-## Non-master Branches
+- Create a branch named `test-branch` on your Sentry fork and make sure you set the upstream to your fork
+- From here on, pushes to that branch (or `master`) will be processed by the backend
+- You can use this command: `echo "$(date)" > file && git add file && git commit -m "Foo" --no-verify && git push`
 
-If you want to have automatically updated references in getsentry for a non-master branch, do the following:
+Testing PR syncs:
 
-- Create a branch in "getsentry"
-- Create a PR from the branch with **the same** name in "sentry" and add `#sync-getsentry` to the PR's description
+- On the getsentry-test-repo and your sentry repo (or the repo you define with `DEPLOY_REPO`) create a branch named `test-pr` (name it anything but `test-branch`)
+- Push both branches to your Sentry fork and your getsentry test repo
+- On your Sentry fork, open a PR to your own repo with the word `#sync-getsentry`
+  - Any subsequent pushes to that Sentry branch will trigger a bump on the getsentry test repo

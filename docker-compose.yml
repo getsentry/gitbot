@@ -9,7 +9,7 @@ services:
       dockerfile: Dockerfile
     image: treeherder-backend
     environment:
-      - DEPLOY_REPO=${DEPLOY_REPO:-git@github.com:getsentry/sentry-deploy-sync-hook-test-repo}
+      - DEPLOY_REPO=${DEPLOY_REPO:-git@github.com:getsentry/getsentry-test-repo}
       - DRY_RUN=${DRY_RUN:-True}
       - FLASK_APP=deployhook.py
       - FLASK_ENV=development

@@ -124,25 +124,31 @@ def process_push():
 def process_pull_request():
     """Handle "pull_request" events from PRs with the deploy marker set"""
     data = request.get_json()
+    app.logger.info(data)
 
-    if data.get("action") not in ["synchronize", "opened"]:
+    action = data.get("action")
+    if action not in ["synchronize", "opened"]:
+        app.logger.info(f"Action: '{action}'' not in 'synchronize' or 'opened'")
         return jsonify(updated=False, reason="Invalid action for pull_request event.")
-
-    if data["repository"]["full_name"] != SENTRY_REPO:
-        return jsonify(updated=False, reason="Unknown repository")
 
     # Check that the PR is from the same repo
     pull_request = data["pull_request"]
     head = pull_request["head"]
     base = pull_request["base"]
-    if (
-        head["repo"]["full_name"] != SENTRY_REPO
-        or base["repo"]["full_name"] != SENTRY_REPO
-    ):
-        return jsonify(updated=False, reason="Invalid head or base repos.")
 
-    if pull_request["merged"]:
-        return jsonify(updated=False, reason="Pull request is already merged.")
+    # No need to make all these checks if we're in development
+    if not IS_DEV:
+        if data["repository"]["full_name"] != SENTRY_REPO:
+            return jsonify(updated=False, reason="Unknown repository")
+        
+        if (
+            head["repo"]["full_name"] != SENTRY_REPO
+            or base["repo"]["full_name"] != SENTRY_REPO
+        ):
+            return jsonify(updated=False, reason="Invalid head or base repos.")
+
+        if pull_request["merged"]:
+            return jsonify(updated=False, reason="Pull request is already merged.")
 
     body = pull_request["body"] or ""
     if body.find(DEPLOY_MARKER) == -1:
@@ -151,6 +157,8 @@ def process_pull_request():
     ref_sha = head["sha"]
     branch = head["ref"]
     if ref_sha:
+        # TODO: It would be ideal if we had a way to communicate back (repo or Slack)
+        # that we did bump the version successfully
         updated, reason = bump_version(branch, "bin/bump-sentry", ref_sha)
         return jsonify(updated=updated, reason=reason)
 
