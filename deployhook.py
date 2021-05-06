@@ -33,13 +33,6 @@ DEPLOY_BRANCH = "master"
 COMMITTER_NAME = "Sentry Bot"
 COMMITTER_EMAIL = "bot@getsentry.com"
 
-PLUGIN_REPOS = [
-    "getsentry/sentry-plugins",
-    "getsentry/sentry-auth-saml2",
-    "getsentry/sentry-auth-google",
-    "getsentry/sentry-auth-github",
-]
-
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 
 DRY_RUN = not bool(util.strtobool(os.environ.get("DRY_RUN", False)))
@@ -139,9 +132,6 @@ def process_push():
         else:
             if repo == SENTRY_REPO:
                 updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-sentry", *args)
-            elif repo in PLUGIN_REPOS:
-                args += ["--repo", repo]
-                updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-plugins", *args)
             else:
                 updated = False
                 reason = "Unknown repository"
