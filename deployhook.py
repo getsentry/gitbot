@@ -100,7 +100,8 @@ def process_push():
     # XXX: On what occassions would we want to use request.args.get("branches")?
     # Pushes to master and test-branch will be acted on
     branches = set(
-        "refs/heads/" + x for x in (request.args.get("branches") or "master,test-branch").split(",")
+        "refs/heads/" + x
+        for x in (request.args.get("branches") or "master,test-branch").split(",")
     )
 
     data = request.get_json()
@@ -119,7 +120,7 @@ def process_push():
     author_name = author_data.get("name")
     author_email = author_data.get("email")
     if author_name and author_email:
-        author = u"{} <{}>".format(author_name, author_email).encode("utf8")
+        author = "{} <{}>".format(author_name, author_email).encode("utf8")
     else:
         author = None
 
@@ -129,8 +130,14 @@ def process_push():
             args += ["--author", author]
 
         # Support Sentry fork when running on development mode
-        if not IS_DEV:
-            if repo == SENTRY_REPO) or (IS_DEV and data["repository"]["name"] == "sentry"):
+        if IS_DEV:
+            if data["repository"]["name"] == "sentry":
+                updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-sentry", *args)
+            else:
+                args += ["--repo", repo]
+                updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-plugins", *args)
+        else:
+            if repo == SENTRY_REPO:
                 updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-sentry", *args)
             elif repo in PLUGIN_REPOS:
                 args += ["--repo", repo]
@@ -138,8 +145,10 @@ def process_push():
             else:
                 updated = False
                 reason = "Unknown repository"
+
+        if not updated:
             app.logger.info(f"We found some issues: {reason}")
-            return jsonify(updated=updated, reason=reason)
+        return jsonify(updated=updated, reason=reason)
 
     return jsonify(updated=False, reason="Commit not relevant for deploy sync.")
 
@@ -163,7 +172,7 @@ def process_pull_request():
     if not IS_DEV:
         if data["repository"]["full_name"] != SENTRY_REPO:
             return jsonify(updated=False, reason="Unknown repository")
-        
+
         if (
             head["repo"]["full_name"] != SENTRY_REPO
             or base["repo"]["full_name"] != SENTRY_REPO
@@ -209,6 +218,7 @@ def index():
         return process_pull_request()
     else:
         return jsonify(updated=False, reason="Unsupported event type.")
+
 
 if not app.debug:
     import logging
