@@ -5,7 +5,19 @@ import tempfile
 import subprocess
 from distutils import util
 from contextlib import contextmanager
+
+import sentry_sdk
 from flask import Flask, request, jsonify
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+sentry_sdk.init(
+    dsn="https://95cc5cfe034b4ff8b68162078978935c@o1.ingest.sentry.io/5748916",
+    integrations=[FlaskIntegration()],
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    # We recommend adjusting this value in production.
+    traces_sample_rate=1.0,
+)
 
 app = Flask(__name__)
 
@@ -20,6 +32,13 @@ DEPLOY_REPO = os.environ.get("DEPLOY_REPO", "git@github.com:getsentry/getsentry"
 DEPLOY_BRANCH = "master"
 COMMITTER_NAME = "Sentry Bot"
 COMMITTER_EMAIL = "bot@getsentry.com"
+
+PLUGIN_REPOS = [
+    "getsentry/sentry-plugins",
+    "getsentry/sentry-auth-saml2",
+    "getsentry/sentry-auth-google",
+    "getsentry/sentry-auth-github",
+]
 
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 
@@ -78,7 +97,7 @@ def bump_version(branch, script, *args):
 
 def process_push():
     """Handle "push" events to master branch"""
-    # On what occassions would we want to use request.args.get("branches")?
+    # XXX: On what occassions would we want to use request.args.get("branches")?
     # Pushes to master and test-branch will be acted on
     branches = set(
         "refs/heads/" + x for x in (request.args.get("branches") or "master,test-branch").split(",")
@@ -110,13 +129,17 @@ def process_push():
             args += ["--author", author]
 
         # Support Sentry fork when running on development mode
-        if (not IS_DEV and repo == SENTRY_REPO) or (IS_DEV and data["repository"]["name"] == "sentry"):
-            updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-sentry", *args)
-        else:
-            updated = False
-            reason = "Unknown repository"
-        app.logger.info(f"We found some issues: {reason}")
-        return jsonify(updated=updated, reason=reason)
+        if not IS_DEV:
+            if repo == SENTRY_REPO) or (IS_DEV and data["repository"]["name"] == "sentry"):
+                updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-sentry", *args)
+            elif repo in PLUGIN_REPOS:
+                args += ["--repo", repo]
+                updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-plugins", *args)
+            else:
+                updated = False
+                reason = "Unknown repository"
+            app.logger.info(f"We found some issues: {reason}")
+            return jsonify(updated=updated, reason=reason)
 
     return jsonify(updated=False, reason="Commit not relevant for deploy sync.")
 
