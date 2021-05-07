@@ -9,7 +9,11 @@ If a PR is opened/synchronized on Sentry and `#sync-getsentry` appears in the fi
 
 ## Deployment
 
-TBD
+- [Install gcloud](https://cloud.google.com/sdk/docs/install)
+  - Install the Docker GCR extension with `gcloud components install docker-credential-gcr`
+  - Authenticate with `gcloud auth login`
+- Build the image `docker build --tag sentry-deploy-sync-hook:latest .`
+- Run `bin/deploy.sh`
 
 ## Requirements
 
