@@ -142,18 +142,11 @@ def process_push():
             args += ["--author", author]
 
         # Support Sentry fork when running on development mode
-        if IS_DEV:
-            if data["repository"]["name"] == "sentry":
-                updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-sentry", *args)
-            else:
-                args += ["--repo", repo]
-                updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-plugins", *args)
+        if (IS_DEV and repo.split("/")[1] == "sentry") or (repo == SENTRY_REPO):
+            updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-sentry", *args)
         else:
-            if repo == SENTRY_REPO:
-                updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-sentry", *args)
-            else:
-                updated = False
-                reason = "Unknown repository"
+            updated = False
+            reason = "Unknown repository"
 
         if not updated:
             app.logger.info(f"We found some issues: {reason}")
