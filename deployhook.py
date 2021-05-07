@@ -32,6 +32,7 @@ DEPLOY_REPO = os.environ.get("DEPLOY_REPO", "git@github.com:getsentry/getsentry"
 DEPLOY_BRANCH = "master"
 COMMITTER_NAME = "Sentry Bot"
 COMMITTER_EMAIL = "bot@getsentry.com"
+SSH_KEY = os.environ["DEPLOY_SSH_KEY"] + "\n"
 
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 
@@ -42,50 +43,68 @@ else:
     app.logger.info("Dry run mode: *OFF* <--!")
     app.logger.info(f"Code bumps will be pushed to {DEPLOY_BRANCH} on {DEPLOY_REPO}")
 
+@contextmanager
+def ssh_environment():
+    key_file = tempfile.mktemp()
+    with open(key_file, "w") as f:
+        f.write(SSH_KEY)
+    os.chmod(key_file, 0o600)
+
+    exec_file = tempfile.mktemp()
+    with open(exec_file, "w") as f:
+        f.write(
+            """#!/bin/sh
+        ssh -i "%s" -o StrictHostKeyChecking=no "$@"
+        """
+            % key_file
+        )
+    os.chmod(exec_file, 0o700)
+    yield exec_file
 
 def bump_version(branch, script, *args):
-    repo_root = tempfile.mkdtemp()
+    with ssh_environment() as ssh_executable:
+        repo_root = tempfile.mkdtemp()
 
-    def cmd(*args, **opts):
-        opts.setdefault("cwd", repo_root)
-        try:
-            app.logger.info(" ".join(args))
-        except Exception:
-            # XXX: Report via Sentry later on
-            app.logger.warning("Investigate why we could not log the args.")
-        return subprocess.Popen(list(args), **opts).wait()
+        def cmd(*args, **opts):
+            opts.setdefault("cwd", repo_root)
+            try:
+                app.logger.info(" ".join(args))
+            except Exception:
+                # XXX: Report via Sentry later on
+                app.logger.warning("Investigate why we could not log the args.")
+            return subprocess.Popen(list(args), **opts).wait()
 
-    # The branch has to be created manually in getsentry/getsentry!
-    if (
-        cmd(
-            "git",
-            "clone",
-            "--depth",
-            "1",
-            "-b",
-            branch,
-            DEPLOY_REPO,
-            repo_root,
-            cwd=None,
-        )
-        != 0
-    ):
-        return False, "Cannot clone branch {} from {}.".format(branch, DEPLOY_REPO)
+        # The branch has to be created manually in getsentry/getsentry!
+        if (
+            cmd(
+                "git",
+                "clone",
+                "--depth",
+                "1",
+                "-b",
+                branch,
+                DEPLOY_REPO,
+                repo_root,
+                cwd=None,
+            )
+            != 0
+        ):
+            return False, "Cannot clone branch {} from {}.".format(branch, DEPLOY_REPO)
 
-    cmd("git", "config", "user.name", COMMITTER_NAME)
-    cmd("git", "config", "user.email", COMMITTER_EMAIL)
-    cmd(script, *args)
-    push_args = None
-    if DRY_RUN:
-        push_args = ("git", "push", "origin", "--dry-run", branch)
-    else:
-        push_args = ("git", "push", "origin", branch)
-    for _ in range(5):
-        if cmd(*push_args) == 0:
-            break
-        cmd("git", "pull", "--rebase", "origin", branch)
+        cmd("git", "config", "user.name", COMMITTER_NAME)
+        cmd("git", "config", "user.email", COMMITTER_EMAIL)
+        cmd(script, *args)
+        push_args = None
+        if DRY_RUN:
+            push_args = ("git", "push", "origin", "--dry-run", branch)
+        else:
+            push_args = ("git", "push", "origin", branch)
+        for _ in range(5):
+            if cmd(*push_args) == 0:
+                break
+            cmd("git", "pull", "--rebase", "origin", branch)
 
-    return True, "Executed: {!r}".format([script] + list(args))
+        return True, "Executed: {!r}".format([script] + list(args))
 
 
 def process_push():

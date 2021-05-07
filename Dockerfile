@@ -4,11 +4,6 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends git ssh && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /key
-# Git ignores this file; this path is used in the app
-COPY private_ssh_key .
-COPY ssh_config /root/.ssh/config
-
 WORKDIR /app
 # Re-create the requirements layer if the requirements change
 COPY requirements.txt /app/
@@ -29,5 +24,4 @@ COPY deployhook.py /app/
 # If things get bad you might want to --max-requests, --max-requests-jitter, --workers 2.
 # TODO: memory usage metrics
 
-# EXPOSE 8080
 CMD exec gunicorn --bind :8080 --workers 1 --threads 4 --timeout 0 deployhook:app
