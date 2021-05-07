@@ -7,12 +7,36 @@ the Sentry's sha on getsentry.
 
 If a PR is opened/synchronized on Sentry and `#sync-getsentry` appears in the first message of the PR, the bot will try to bump the version on getsentry for a branch with the same name as the one on Sentry. This keeps both PRs synchronized and is useful for staging deployments. More details [here](https://www.notion.so/sentry/sync-getsentry-95a32dabe03b467bb3ec5fa0e20491e5).
 
+## GCR configuration
+
+The GCR instances have these environments defined:
+
+- ENV: {production,staging}
+- SSH_KEY: Contents of private key
+
 ## Deployment
+
+The CI will deploy changes from the `master` and `production` branches.
+In order to deploy to production you will need to merge the changes from `master` into `production`.
+
+TODO: I've envisioned that deployments from `master` will produce and publish the image while on `production` we use the image produced in `master`. We might need to protect `production` from having pushes to it. Perhaps we need to store the sha in the Docker image.
+
+If you want to test a new build on staging you can ask an owner to deploy it for you with the steps below.
+
+### Manual deployment
+
+Set up:
 
 - [Install gcloud](https://cloud.google.com/sdk/docs/install)
   - Install the Docker GCR extension with `gcloud components install docker-credential-gcr`
   - Authenticate with `gcloud auth login`
+
+Test out a PRs build on staging:
+
+- Checkout the code
 - Build the image `docker build --tag sentry-deploy-sync-hook:latest .`
+  - If you want to inspect the contents of the image you can do `docker run -ti sentry-deploy-sync-hook:latest bash`
+  - XXX: I wonder if we should probably not-use the latest tag
 - Run `bin/deploy.sh`
 
 ## Requirements
