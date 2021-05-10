@@ -4,18 +4,18 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends git ssh && \
     rm -rf /var/lib/apt/lists/*
 
-# This helps ssh adding Github servers automatically w/o prompt
-COPY docker/ssh_config /root/.ssh/config
-
 WORKDIR /app
 # Re-create the requirements layer if the requirements change
 COPY requirements.txt /app/
 RUN pip install --disable-pip-version-check --no-cache-dir -r requirements.txt
 
+# This helps ssh adding Github servers automatically w/o prompt
+COPY docker/ssh_config /root/.ssh/config
+# This script will generate /app/private_ssh_key based on DEPLOY_SSH_KEY
 COPY docker/entrypoint.sh /app/
 ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
 
-# Re-create the code layer if the file changes
+# Source code
 COPY deployhook.py /app/
 
 # 1 worker, 4 worker threads should be more than enough.

@@ -4,7 +4,6 @@ import os
 import tempfile
 import subprocess
 from distutils import util
-from contextlib import contextmanager
 
 import sentry_sdk
 from flask import Flask, request, jsonify
@@ -145,7 +144,7 @@ def process_pull_request():
 
     action = data.get("action")
     if action not in ["synchronize", "opened"]:
-        app.logger.info(f"Action: '{action}'' not in 'synchronize' or 'opened'")
+        app.logger.info(f"Action: '{action}' not in 'synchronize' or 'opened'")
         return jsonify(updated=False, reason="Invalid action for pull_request event.")
 
     # Check that the PR is from the same repo
