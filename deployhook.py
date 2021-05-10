@@ -14,8 +14,8 @@ app = Flask(__name__)
 IS_DEV = app.env == "development"
 
 if not IS_DEV:
-    ENVIRONMENT = os.environ.get("ENVIRONMENT", "development")
-    app.logger.info(f"Environment: {ENVIRONMENT}")
+    ENV = os.environ.get("ENV", "production")
+    app.logger.info(f"Environment: {ENV}")
 
     sentry_sdk.init(
         dsn="https://95cc5cfe034b4ff8b68162078978935c@o1.ingest.sentry.io/5748916",
@@ -24,7 +24,7 @@ if not IS_DEV:
         # of transactions for performance monitoring.
         # We recommend adjusting this value in production.
         traces_sample_rate=1.0,
-        environment=ENVIRONMENT,
+        environment=ENV,
     )
 
 GETSENTRY_OWNER = "getsentry"

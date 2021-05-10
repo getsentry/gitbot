@@ -14,9 +14,9 @@ with open('/app/private_ssh_key', 'w') as f:
 fi
 
 # If the private key has not been written we should abort
-if [ ! -f /app/private_ssh_key ]; then
-    echo -e "The container needs a private key and this is created via DEPLOY_SSH_KEY (see docs for details)" >&2
-    exit 1
-fi
+# if [ ! -f /app/private_ssh_key ]; then
+#     echo -e "The container needs a private key and this is created via DEPLOY_SSH_KEY (see docs for details)" >&2
+#     exit 1
+# fi
 
 exec "$@"

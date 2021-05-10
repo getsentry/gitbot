@@ -11,8 +11,9 @@ If a PR is opened/synchronized on Sentry and `#sync-getsentry` appears in the fi
 
 The GCR instances have these environments defined:
 
-- ENV: {production,staging}
-- SSH_KEY: Contents of private key
+- ENV: staging (Only applicable for staging)
+- DEPLOY_SSH_KEY: Contents of private key
+- Images deployed from `gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook`
 
 ## Deployment
 
@@ -23,7 +24,7 @@ TODO: I've envisioned that deployments from `master` will produce and publish th
 
 If you want to test a new build on staging you can ask an owner to deploy it for you with the steps below.
 
-### Manual deployment
+### Manual deployment to staging
 
 Set up:
 
@@ -35,9 +36,8 @@ Test out a PRs build on staging:
 
 - Checkout the code
 - Build the image `docker build --tag sentry-deploy-sync-hook:latest .`
-  - If you want to inspect the contents of the image you can do `docker run -ti sentry-deploy-sync-hook:latest bash`
-  - XXX: I wonder if we should probably not-use the latest tag
 - Run `bin/deploy.sh`
+  - TODO: We might need some more work to not tag it as `latest`
 
 ## Requirements
 
