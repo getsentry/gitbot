@@ -40,7 +40,7 @@ SSH_KEY = os.environ["DEPLOY_SSH_KEY"] + "\n"
 
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 
-DRY_RUN = bool(util.strtobool(os.environ.get("DRY_RUN", False)))
+DRY_RUN = bool(util.strtobool(os.environ.get("DRY_RUN", "False")))
 if DRY_RUN:
     app.logger.info("Dry run mode: on")
 else:
