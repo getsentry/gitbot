@@ -17,7 +17,7 @@ TBD
 
 ## Development
 
-Create [a new SSH key](https://github.com/settings/keys) for this project and run this command `echo "echo "DEPLOY_SSH_KEY=\"$(cat ~/.ssh/private_ssh_key)\"" > .env`. Docker Compose reads by default variables defined in that file. This will will _not_ be included as part of the Docker image.
+Create [a new SSH key](https://github.com/settings/keys) for this project and run this command `echo "DEPLOY_SSH_KEY='$(cat ~/.ssh/private_ssh_key)'" > .env`. Docker Compose reads by default variables defined in that file. This will will _not_ be included as part of the Docker image.
 
 **NOTE**: It is super important you understand that this private key will be able to commit anywhere the associated Github user can. It is encouraged you delete the private key from Github as soon as you're done doing development.
 

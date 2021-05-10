@@ -8,6 +8,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: sentry-deploy-sync-hook
+    entrypoint: "./docker/entrypoint.sh"
     environment:
       - DEPLOY_REPO=${DEPLOY_REPO:-git@github.com:getsentry/getsentry-test-repo}
       - DEPLOY_SSH_KEY
