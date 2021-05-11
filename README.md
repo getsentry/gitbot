@@ -12,6 +12,9 @@ If a PR is opened/synchronized on Sentry and `#sync-getsentry` appears in the fi
 The GCR instances have these environments defined:
 
 - DEPLOY_SSH_KEY: Contents of private key
+- DEPLOY_REPO:
+  - `git@github.com:getsentry/getsentry` for production
+  - `git@github.com:getsentry/getsentry-test-repo` for staging
 - ENV: staging (Only applicable for staging)
 - GITHUB_WEBHOOK_SECRET: This value comes from the webhook created on the Sentry repo (or your fork)
 - Images deployed from `gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook`
@@ -39,6 +42,16 @@ Test out a PRs build on staging:
 - Build the image `docker build --tag sentry-deploy-sync-hook:latest .`
 - Run `bin/deploy.sh`
   - TODO: We might need some more work to not tag it as `latest`
+
+## Troubleshooting
+
+If you want to see extra logging in the output of GCR you can set `FLASK_DEBUG=1` as an env variable.
+
+If you want to run the same configuration as production you can do:
+
+```shell
+docker run -e DEPLOY_SSH_KEY="$(cat private_ssh_key)" --rm -ti getsentry/sync-hook bash
+```
 
 ## Requirements
 

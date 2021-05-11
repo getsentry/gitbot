@@ -32,11 +32,11 @@ SENTRY_REPO = "{}/sentry".format(GETSENTRY_OWNER)
 
 DEPLOY_MARKER = "#sync-getsentry"
 
-DEPLOY_REPO = os.environ.get("DEPLOY_REPO", "git@github.com:getsentry/getsentry")
+# This forces the production apps to explicitely have to set where to push
+DEPLOY_REPO = os.environ["DEPLOY_REPO"]
 DEPLOY_BRANCH = "master"
 COMMITTER_NAME = "Sentry Bot"
 COMMITTER_EMAIL = "bot@getsentry.com"
-SSH_KEY = os.environ["DEPLOY_SSH_KEY"] + "\n"
 
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 
