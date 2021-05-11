@@ -8,7 +8,7 @@ IMAGE=gcr.io/${PROJECT}/${NAME}
 
 SERVICE=sentry-deploy-sync-hook-staging # GCR service name
 
-# The image needs to be build prior to executing this step
+# The image needs to be built prior to executing this step
 gcloud builds submit --tag $IMAGE --project=$PROJECT
 gcloud run deploy "$SERVICE" \
 	--image $IMAGE \

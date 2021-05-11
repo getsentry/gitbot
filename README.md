@@ -11,8 +11,9 @@ If a PR is opened/synchronized on Sentry and `#sync-getsentry` appears in the fi
 
 The GCR instances have these environments defined:
 
-- ENV: staging (Only applicable for staging)
 - DEPLOY_SSH_KEY: Contents of private key
+- ENV: staging (Only applicable for staging)
+- GITHUB_WEBHOOK_SECRET: This value comes from the webhook created on the Sentry repo (or your fork)
 - Images deployed from `gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook`
 
 ## Deployment
