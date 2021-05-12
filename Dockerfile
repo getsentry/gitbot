@@ -11,7 +11,8 @@ RUN pip install --disable-pip-version-check --no-cache-dir -r requirements.txt
 
 # This helps ssh adding Github servers automatically w/o prompt
 COPY docker/ssh_config /root/.ssh/config
-# This script will generate /app/private_ssh_key based on DEPLOY_SSH_KEY
+# These scripts will generate /app/private_ssh_key based on DEPLOY_SSH_KEY
+COPY docker/write_to_disk.py /app/
 COPY docker/entrypoint.sh /app/
 ENTRYPOINT exec /app/entrypoint.sh $0 $@
 

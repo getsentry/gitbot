@@ -80,6 +80,8 @@ If you want to run the same configuration as production you can do:
 docker run -e DEPLOY_SSH_KEY="$(cat private_ssh_key)" --rm -ti getsentry/sync-hook bash
 ```
 
+**NOTE**: The above command will also test that the key is written to disk properly and that it can connect to Github.
+
 ## Rotate SSH key
 
 Steps:
