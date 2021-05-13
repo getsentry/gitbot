@@ -98,7 +98,7 @@ def process_push():
     # XXX: On what occassions would we want to use request.args.get("branches")?
     # Pushes to master and test-branch will be acted on
     branches = set(
-        "refs/heads/" + x
+        f"refs/heads/{x}"
         for x in (request.args.get("branches") or "master,test-branch").split(",")
     )
 
@@ -118,7 +118,7 @@ def process_push():
     author_name = author_data.get("name")
     author_email = author_data.get("email")
     if author_name and author_email:
-        author = "{} <{}>".format(author_name, author_email).encode("utf8")
+        author = f"{author_name} <{author_email}>"
     else:
         author = None
 
