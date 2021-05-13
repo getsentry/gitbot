@@ -1,7 +1,7 @@
 #!/bin/bash
 # This Docker entrypoint guarantees that a private key will be generated
 set -e
-
+set -x
 # Try to create the private key
 if [ ! -f /app/private_ssh_key ] && [ -n "${DEPLOY_SSH_KEY}" ]; then
     # Writing an SSH key via UNIX tools was tricky
