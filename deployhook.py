@@ -94,7 +94,7 @@ def process_push():
     # XXX: On what occassions would we want to use request.args.get("branches")?
     # Pushes to master and test-branch will be acted on
     branches = set(
-        "refs/heads/" + x
+        f"refs/heads/{x}"
         for x in (request.args.get("branches") or "master,test-branch").split(",")
     )
 
