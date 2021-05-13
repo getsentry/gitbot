@@ -10,7 +10,7 @@ services:
     image: sentry-deploy-sync-hook
     # XXX: Remove this comment, I have not been able to remove this
     # https://github.com/compose-spec/compose-spec/blob/master/spec.md#entrypoint
-    entrypoint: ./docker/entrypoint.sh
+    entrypoint: "./docker/entrypoint.sh"
     environment:
       - DEPLOY_REPO=${DEPLOY_REPO:-git@github.com:getsentry/getsentry-test-repo}
       - DEPLOY_SSH_KEY
