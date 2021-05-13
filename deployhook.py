@@ -114,7 +114,7 @@ def process_push():
     author_name = author_data.get("name")
     author_email = author_data.get("email")
     if author_name and author_email:
-        author = "{} <{}>".format(author_name, author_email).encode("utf8")
+        author = f"{author_name} <{author_email}>"
     else:
         author = None
 
