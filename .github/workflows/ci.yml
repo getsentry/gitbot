@@ -1,6 +1,10 @@
 name: CI
 
 on:
+  # push:
+  #   branches:
+  #     - master
+  #     - production
   pull_request:
 
 jobs:
@@ -12,35 +16,36 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Builds docker image
-        run: docker build --tag sentry-deploy-sync-hook:latest .
+        run: |
+          docker build --tag sentry-deploy-sync-hook:latest .
+          # Test that the dev env starts up
+          docker-compose up -d
+          docker-compose down
 
-  # build-deploy:
-  #   name: build and deploy
-  #   if: github.ref == 'refs/heads/production'
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 10
+  build-deploy:
+    name: build and deploy
+    # For now let it run on PRs
+    # if: github.ref == 'refs/heads/masterr'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
 
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
 
-  #     # Setup gcloud CLI
-  #     - name: Setup gcloud CLI
-  #       uses: google-github-actions/setup-gcloud@master
-  #       with:
-  #         # TODO: Find this info and check with Billy
-  #         service_account_email: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
-  #         service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+      # Setup gcloud CLI
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v0.2.1
+        with:
+          service_account_email: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+          service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
 
-  #     # XXX: Functions or Run?
-  #     # Deploy to Google Cloud Functions
-  #     - name: Deploy
-  #       id: deploy
-  #       env:
-  #         GH_WEBHOOK_SECRET: ${{ secrets.GH_WEBHOOK_SECRET }}
-  #       run: |
-  #         echo "::set-output name=deploy-start::$(date +%s)"
-  #         bin/deploy.sh
+      # Deploy to Google Cloud Run (only staging)
+      - name: Deploy
+        id: deploy
+        run: |
+          echo "::set-output name=deploy-start::$(date +%s)"
+          bin/deploy.sh
 
   #     - name: Sentry Release
   #       uses: getsentry/action-release@v1.0.0
