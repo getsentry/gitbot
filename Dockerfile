@@ -13,7 +13,7 @@ RUN pip install --disable-pip-version-check --no-cache-dir -r requirements.txt
 COPY docker/ssh_config /root/.ssh/config
 # This script will generate /app/private_ssh_key based on DEPLOY_SSH_KEY
 COPY docker/entrypoint.sh /app/
-ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
+ENTRYPOINT exec /app/entrypoint.sh $0 $@
 
 # Source code
 COPY deployhook.py /app/
@@ -31,4 +31,4 @@ COPY deployhook.py /app/
 # TODO: memory usage metrics
 
 # Because we have an entrypoint we call exec within entrypoint.sh
-CMD gunicorn --bind :8080 --workers 1 --threads 4 --timeout 0 deployhook:app
+CMD ["gunicorn", "--bind", ":8080", "--workers", "1", "--threads", "4", "--timeout", "0", "deployhook:app"]
