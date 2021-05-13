@@ -9,16 +9,10 @@ if [ ! -f /app/private_ssh_key ] && [ -n "${DEPLOY_SSH_KEY}" ]; then
     chmod 600 /app/private_ssh_key
 fi
 
-env
-cat /app/private_ssh_key
-ls -l /app
-
 # If the private key has not been written we should abort
 if [ ! -f /app/private_ssh_key ]; then
     echo -e "The container needs a private key and this is created via DEPLOY_SSH_KEY (see docs for details)" >&2
     exit 1
 fi
-
-ssh -T git@github.com -i /app/private_ssh_key
 
 exec "$@"
