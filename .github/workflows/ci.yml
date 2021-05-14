@@ -8,30 +8,23 @@ on:
   pull_request:
 
 jobs:
-  docker:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    if: github.event_name == 'pull_request'
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Builds docker image
-        run: |
-          docker build --tag sentry-deploy-sync-hook:latest .
-          # Test that the dev env starts up
-          docker-compose up -d
-          docker-compose down
-
   build-deploy:
     name: build and deploy
     # For now let it run on PRs
-    # if: github.ref == 'refs/heads/masterr'
+    # if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Builds docker image
+        run: |
+          docker build --tag sentry-deploy-sync-hook:latest .
+          # Test that the dev env starts up
+          docker-compose up -d
+          docker-compose down
 
       # Setup gcloud CLI
       - name: Setup gcloud CLI
@@ -42,6 +35,8 @@ jobs:
 
       # Deploy to Google Cloud Run (only staging)
       - name: Deploy
+        # XXX: Add this restriction back when we merge to master
+        # if: github.ref == 'refs/heads/master'
         id: deploy
         run: |
           echo "::set-output name=deploy-start::$(date +%s)"
