@@ -28,6 +28,8 @@ jobs:
     name: build and deploy
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      VERSION: ${{ github.sha }}
 
     steps:
       - name: Checkout
@@ -74,7 +76,7 @@ jobs:
           echo "::set-output name=deploy-start::$(date +%s)"
           gcloud run deploy "$SERVICE" \
           --image gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
-          --project=$PROJECT \
+          --project=sentry-dev-tooling \
           --platform managed \
           --allow-unauthenticated \
           --region=us-west1
@@ -86,4 +88,4 @@ jobs:
         with:
           environment: ${{ steps.info.outputs.environment }}
           started_at: ${{ steps.deploy.outputs.deploy-start }}
-          version: ${{ env.VERSION }}  # XXX: Determine this
+          version: ${{ env.VERSION }}
