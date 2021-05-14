@@ -81,12 +81,13 @@ jobs:
         env:
           SERVICE: ${{ steps.info.outputs.service }}
 
-      - name: Sentry Release
-        uses: getsentry/action-release@v1.0.0
-        env:
-          SENTRY_ORG: sentry
-          SENTRY_PROJECT: sentry-deploy-sync-hook
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        with:
-          environment: ${{ steps.info.outputs.environment }}
-          started_at: ${{ steps.deploy.outputs.deploy-start }}
+      # XXX: Comment out until this code is merged to master
+      # - name: Sentry Release
+      #   uses: getsentry/action-release@v1.0.0
+      #   env:
+      #     SENTRY_ORG: sentry
+      #     SENTRY_PROJECT: sentry-deploy-sync-hook
+      #     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      #   with:
+      #     environment: ${{ steps.info.outputs.environment }}
+      #     started_at: ${{ steps.deploy.outputs.deploy-start }}
