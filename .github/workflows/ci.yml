@@ -1,17 +1,31 @@
 name: CI
 
 on:
-  # push:
-  #   branches:
-  #     - master
-  #     - production
+  push:
+    branches:
+      - master
+      - production
   pull_request:
 
 jobs:
+  docker:
+    name: docker builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Builds docker image
+      run: |
+        docker build --tag sentry-deploy-sync-hook:latest .
+        # Test that the dev env starts up
+        docker-compose up -d
+        docker-compose down
+
   build-deploy:
+    needs: 'docker'
     name: build and deploy
-    # For now let it run on PRs
-    # if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -22,9 +36,6 @@ jobs:
       - name: Builds docker image
         run: |
           docker build --tag sentry-deploy-sync-hook:latest .
-          # Test that the dev env starts up
-          docker-compose up -d
-          docker-compose down
 
       # Setup gcloud CLI
       - name: Setup gcloud CLI
@@ -32,19 +43,47 @@ jobs:
         with:
           service_account_email: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+      
 
-      # Deploy to Google Cloud Run (only staging)
-      - name: Deploy
-        # XXX: Add this restriction back when we merge to master
+      - name: Service Info
+        id: info
+        run: |
+          if [ $REF == 'refs/heads/master' ]; then
+            echo "::set-output name=service::sentry-deploy-sync-hook-staging"
+            echo "::set-output name=environment::staging"
+          else
+            echo "::set-output name=service::sentry-deploy-sync-hook"
+            echo "::set-output name=environment::production"
+          fi
+        env:
+          REF: ${{ github.ref }}
+
+      # Only staging uploads an image to the registry
+      - name: Upload
+        # XXX: Comment out until merged to master
         # if: github.ref == 'refs/heads/master'
+        run: |
+          gcloud builds submit \
+            --tag gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
+            --project=sentry-dev-tooling
+
+      # It currently builds and uploads
+      - name: Deploy
         id: deploy
         run: |
           echo "::set-output name=deploy-start::$(date +%s)"
-          bin/deploy.sh
+          gcloud run deploy "$SERVICE" \
+          --image gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
+          --project=$PROJECT \
+          --platform managed \
+          --allow-unauthenticated \
+          --region=us-west1
+        env:
+          SERVICE: ${{ steps.info.outputs.service }}
 
-  #     - name: Sentry Release
-  #       uses: getsentry/action-release@v1.0.0
-  #       with:
-  #         environment: 'production'  # XXX: Determine this
-  #         started_at: ${{ steps.deploy.outputs.deploy-start }}
-  #         version: ${{ env.VERSION }}  # XXX: Determine this
+      - name: Sentry Release
+        uses: getsentry/action-release@v1.0.0
+        with:
+          environment: ${{ steps.info.outputs.environment }}
+          started_at: ${{ steps.deploy.outputs.deploy-start }}
+          version: ${{ env.VERSION }}  # XXX: Determine this
