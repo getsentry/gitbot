@@ -20,6 +20,7 @@ jobs:
       run: |
         docker build --tag sentry-deploy-sync-hook:latest .
 
+    # XXX: Add check that verifies that a valid SSH key was used
     - name: Test local dev starts up
       run: |
         docker-compose up -d
@@ -27,6 +28,9 @@ jobs:
 
   build-deploy:
     needs: 'docker'
+    # XXX: What's the syntax for OR production?
+    # This check only runs for master and production
+    if: github.ref == 'refs/heads/master'
     name: build and deploy
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -60,8 +64,7 @@ jobs:
 
       # Only staging uploads an image to the registry
       - name: Upload
-        # XXX: Comment out before merging to master
-        # if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         run: |
           gcloud builds submit \
             --tag gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
@@ -81,13 +84,12 @@ jobs:
         env:
           SERVICE: ${{ steps.info.outputs.service }}
 
-      # XXX: Comment out until this code is merged to master
-      # - name: Sentry Release
-      #   uses: getsentry/action-release@v1.0.0
-      #   env:
-      #     SENTRY_ORG: sentry
-      #     SENTRY_PROJECT: sentry-deploy-sync-hook
-      #     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      #   with:
-      #     environment: ${{ steps.info.outputs.environment }}
-      #     started_at: ${{ steps.deploy.outputs.deploy-start }}
+      - name: Sentry Release
+        uses: getsentry/action-release@v1.0.0
+        env:
+          SENTRY_ORG: sentry
+          SENTRY_PROJECT: sentry-deploy-sync-hook
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        with:
+          environment: ${{ steps.info.outputs.environment }}
+          started_at: ${{ steps.deploy.outputs.deploy-start }}
