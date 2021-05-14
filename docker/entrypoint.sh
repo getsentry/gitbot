@@ -15,10 +15,4 @@ if [ ! -f /app/private_ssh_key ]; then
     exit 1
 fi
 
-# If the key has a passphrase this will fail
-# This verifies that the key is in the right format, however, even on success it exits with non-success
-# XXX: Comment out temporarily
-# ssh -T git@github.com -v -i /app/private_ssh_key ||
-#     [ ${?} == 255 ] && echo "The key is an improper format. Look into it." && rm /app/private_ssh_key && exit 1
-
 exec "$@"

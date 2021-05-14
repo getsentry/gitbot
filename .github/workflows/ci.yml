@@ -16,7 +16,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Builds docker image
+    - name: Build Docker image
       run: |
         docker build --tag sentry-deploy-sync-hook:latest .
 
@@ -39,15 +39,13 @@ jobs:
         run: |
           docker build --tag sentry-deploy-sync-hook:latest .
 
-      # Setup gcloud CLI
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v0.2.1
         with:
           service_account_email: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-      
 
-      - name: Service Info
+      - name: GCR Service Info
         id: info
         run: |
           if [ $REF == 'refs/heads/master' ]; then
@@ -69,17 +67,17 @@ jobs:
             --tag gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
             --project=sentry-dev-tooling
 
-      # It currently builds and uploads
+      # Deploy the latest image
       - name: Deploy
         id: deploy
         run: |
           echo "::set-output name=deploy-start::$(date +%s)"
           gcloud run deploy "$SERVICE" \
-          --image gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
-          --project=sentry-dev-tooling \
-          --platform managed \
-          --allow-unauthenticated \
-          --region=us-west1
+            --image gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
+            --project=sentry-dev-tooling \
+            --platform managed \
+            --allow-unauthenticated \
+            --region=us-west1
         env:
           SERVICE: ${{ steps.info.outputs.service }}
 
