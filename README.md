@@ -23,7 +23,7 @@ If you want to test a new build on staging you can ask an owner to deploy it for
 
 The GCR instances have these environments defined:
 
-- DEPLOY_SSH_KEY: Contents of private key. Don't pase the key in GCR but use `key_to_clipboard.sh` to format it correctly.
+- DEPLOY_SSH_KEY: Contents of private key. Don't paste the key directly in GCR but use `key_to_clipboard.sh` first to format it correctly.
 - DEPLOY_REPO:
   - `git@github.com:getsentry/getsentry` for production
   - `git@github.com:getsentry/getsentry-test-repo` for staging
@@ -107,7 +107,7 @@ Github webhook: TBD
 We use docker compose to help with live code reloading (since we mount a volume to the source checkout):
 
 ```shell
-docker compose up --build
+docker-compose up --build
 ```
 
 To test the push API you can use `curl`:
@@ -140,7 +140,7 @@ curl \
 
 In order to test Github changes through your local set up you need to follow these steps:
 
-- Run `docker compose up --build -e DRY_RUN=False`
+- Run `docker-compose up --build -e DRY_RUN=False`
   - Verify the output says dry run mode to be off and which repo it will push to
 - Set up [Ngrok](https://ngrok.io/) to redirect Github calls to your localhost
   - `ngrok http 5000` --> Grab the URL ngrok gives you (e.g. `https://6a88fe29c5cc.ngrok.io`)
