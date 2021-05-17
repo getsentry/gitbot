@@ -88,7 +88,7 @@ Steps:
 
 - This [Notion page](https://www.notion.so/sentry/Bot-Accounts-beea0fc35473453ab50e05e6e4d1d02d) has information as to who has access to the bot account.
 - Request a new SSH key and place in your disk
-- Call `key_to_clipboard.sh -k path_to_kay`
+- Call `./key_to_clipboard.sh -k path_to_kay`
 - Paste the contents of your clipboard into GCR and deploy the app
 - Request for the old key to be deleted
 
