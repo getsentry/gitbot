@@ -3,3 +3,4 @@ venv
 *.pyc
 *.pyo
 private_ssh_key
+gcr-key.json

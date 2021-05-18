@@ -3,7 +3,7 @@
 set -e
 
 # Try to create the private key
-if [ ! -f /app/private_ssh_key ] && [ -n "${DEPLOY_SSH_KEY}" ]; then
+if [ ! -f /app/private_ssh_key ]; then
     # Writing an SSH key via UNIX tools was tricky
     /app/docker/write_to_disk.py
     chmod 600 /app/private_ssh_key

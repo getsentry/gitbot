@@ -23,13 +23,14 @@ If you want to test a new build on staging you can ask an owner to deploy it for
 
 The GCR instances have these environments defined:
 
-- DEPLOY_SSH_KEY: Contents of private key. Don't paste the key directly in GCR but use `key_to_clipboard.sh` first to format it correctly.
 - DEPLOY_REPO:
   - `git@github.com:getsentry/getsentry` for production
   - `git@github.com:getsentry/getsentry-test-repo` for staging
 - ENV: staging (Only applicable for staging)
 - GITHUB_WEBHOOK_SECRET: This value comes from the webhook created on the Sentry repo (or your fork)
 - Images deployed from `gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook`
+
+The GCR instances can fetch the SSH key from Google Secrets without any env variables since they have a service account associated to them.
 
 ### Manual deployment to staging
 
@@ -70,6 +71,13 @@ Testing PR syncs:
 - On Sentry (or your fork), open a PR with the word `#sync-getsentry`
   - Any subsequent pushes to that Sentry branch will trigger a bump on the `DEPLOY_REPO`
 
+Testing Google Secrets fetching:
+
+- Remove `DEPLOY_SSH_KEY` from your `.env` file
+- Download a key associated to the GC staging service account
+  - Place the file in your source checkout as `gcr-key.json` (it needs to be within the mount)
+- Run `rm -f private_ssh_key && docker-compose run -e GOOGLE_APPLICATION_CREDENTIALS="gcr-key.json" backend ssh -T git@github.com`
+
 ## Troubleshooting
 
 If you want to see extra logging in the output of GCR you can set `FLASK_DEBUG=1` as an env variable.
@@ -101,8 +109,6 @@ Steps:
 Create [a new SSH key](https://github.com/settings/keys) (no passphrase) for this project and run this command `echo "DEPLOY_SSH_KEY='$(cat ~/.ssh/private_ssh_key)'" > .env`. Docker Compose reads by default variables defined in that file. This will will _not_ be included as part of the Docker image.
 
 **NOTE**: It is super important you understand that this private key will be able to commit anywhere the associated Github user can. It is encouraged you delete the private key from Github as soon as you're done doing development.
-
-Github webhook: TBD
 
 We use docker compose to help with live code reloading (since we mount a volume to the source checkout):
 
