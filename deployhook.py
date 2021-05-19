@@ -65,12 +65,8 @@ def bump_version(branch, script, *args):
     repo_root = tempfile.mkdtemp()
 
     def cmd(*args, **opts):
+        # Do not show the output of the git clone command since the PAT shows in the output
         opts.setdefault("cwd", repo_root)
-        try:
-            app.logger.info(" ".join(args))
-        except Exception:
-            # XXX: Report via Sentry later on
-            app.logger.warning("Investigate why we could not log the args.")
         return subprocess.Popen(list(args), **opts).wait()
 
     # The branch has to be created manually in getsentry/getsentry!
