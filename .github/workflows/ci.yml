@@ -20,6 +20,7 @@ jobs:
       # Run only on PR because it will on `build-deploy` on master & production
       if: "startsWith(github.ref, 'refs/pull')"
       run: |
+        echo "$GITHUB_REF"
         docker build .
 
     # XXX: Add check that verifies that a valid SSH key was used
@@ -53,12 +54,12 @@ jobs:
       - name: GCR Service Info
         id: info
         run: |
-          if [ $GITHUB_REF == 'refs/heads/master' ]; then
-            echo "::set-output name=service::sentry-deploy-sync-hook-staging"
-            echo "::set-output name=environment::staging"
-          else
+          if [ $GITHUB_REF == 'refs/heads/production' ]; then
             echo "::set-output name=service::sentry-deploy-sync-hook"
             echo "::set-output name=environment::production"
+          else
+            echo "::set-output name=service::sentry-deploy-sync-hook-staging"
+            echo "::set-output name=environment::staging"
           fi
 
       # Only staging uploads an image to the registry
