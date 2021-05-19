@@ -20,7 +20,6 @@ jobs:
       # Run only on PR because it will on `build-deploy` on master & production
       if: "startsWith(github.ref, 'refs/pull')"
       run: |
-        echo "$GITHUB_REF"
         docker build .
 
     # XXX: Add check that verifies that a valid SSH key was used
@@ -41,7 +40,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Builds docker image
+      - name: Build Docker image
         run: |
           docker build --tag sentry-deploy-sync-hook:latest .
 
