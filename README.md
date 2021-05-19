@@ -45,7 +45,7 @@ Test out a PRs build on staging:
 - Checkout the PR's code
 - Build the image `docker build --tag sentry-deploy-sync-hook:latest .`
   - TODO: We might need some more work to not tag it as `latest`
-- Run `bin/deploy.sh`
+- Run `bin/manual_staging_deploy.sh`
 - See section "Testing changes" for how to test that it is working
 
 ## Repositories set up and testing

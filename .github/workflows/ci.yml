@@ -17,8 +17,10 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Build Docker image
+      # Run only on PR because it will on `build-deploy` on master & production
+      if: "startsWith(github.ref, 'refs/pull')"
       run: |
-        docker build --tag sentry-deploy-sync-hook:latest .
+        docker build .
 
     # XXX: Add check that verifies that a valid SSH key was used
     - name: Test local dev starts up
@@ -27,10 +29,8 @@ jobs:
         docker-compose down
 
   build-deploy:
-    needs: 'docker'
-    # XXX: What's the syntax for OR production?
     # This check only runs for master and production
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/production'
     name: build and deploy
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -52,15 +52,13 @@ jobs:
       - name: GCR Service Info
         id: info
         run: |
-          if [ $REF == 'refs/heads/master' ]; then
+          if [ $GITHUB_REF == 'refs/heads/master' ]; then
             echo "::set-output name=service::sentry-deploy-sync-hook-staging"
             echo "::set-output name=environment::staging"
           else
             echo "::set-output name=service::sentry-deploy-sync-hook"
             echo "::set-output name=environment::production"
           fi
-        env:
-          REF: ${{ github.ref }}
 
       # Only staging uploads an image to the registry
       - name: Upload
