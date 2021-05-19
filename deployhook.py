@@ -33,8 +33,9 @@ SENTRY_REPO = "{}/sentry".format(GETSENTRY_OWNER)
 
 DEPLOY_MARKER = "#sync-getsentry"
 
+PAT = os.environ.get("DEPLOY_SYNC_PAT")
 # On GCR we use Google secrets to fetch the PAT
-if not os.environ.get("DEPLOY_SYNC_PAT"):
+if not PAT:
     # If you're inside of GCR you don't need to set any env variables
     # If you want to test locally you will have to set GOOGLE_APPLICATION_CREDENTIALS to the path of the GCR key
     # Create the Secret Manager client.
@@ -43,10 +44,12 @@ if not os.environ.get("DEPLOY_SYNC_PAT"):
     response = client.access_secret_version(
         name="projects/sentry-dev-tooling/secrets/DeploySyncPat/versions/1"
     )
-    KEY = response.payload.data.decode("UTF-8")
+    PAT = response.payload.data.decode("UTF-8")
 # This forces the production apps to explicitely have to set where to push
 DEPLOY_REPO = os.environ["DEPLOY_REPO"]
-DEPLOY_REPO_WITH_PAT = f"https://{os.environ['DEPLOY_SYNC_USER']}:{os.environ['DEPLOY_SYNC_PAT']}@github.com/{DEPLOY_REPO}"
+DEPLOY_REPO_WITH_PAT = (
+    f"https://{os.environ['DEPLOY_SYNC_USER']}:{PAT}@github.com/{DEPLOY_REPO}"
+)
 DEPLOY_BRANCH = "master"
 COMMITTER_NAME = "Sentry Bot"
 COMMITTER_EMAIL = "bot@getsentry.com"
