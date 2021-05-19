@@ -80,7 +80,7 @@ jobs:
             --project=sentry-dev-tooling \
             --platform managed \
             --allow-unauthenticated \
-            --region=us-west1
+            --region=us-central1
         env:
           SERVICE: ${{ steps.info.outputs.service }}
 

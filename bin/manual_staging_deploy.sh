@@ -15,4 +15,4 @@ gcloud run deploy "$SERVICE" \
 	--project=$PROJECT \
 	--platform managed \
 	--allow-unauthenticated \
-	--region=us-west1
+	--region=us-central1
