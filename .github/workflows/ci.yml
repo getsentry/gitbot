@@ -30,7 +30,8 @@ jobs:
 
   build-deploy:
     # This check only runs for master and production
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/production'
+    # XXX: Remove before merging
+    # if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/production'
     name: build and deploy
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -62,7 +63,8 @@ jobs:
 
       # Only staging uploads an image to the registry
       - name: Upload
-        if: github.ref == 'refs/heads/master'
+        # XXX: Remove before merging
+        # if: github.ref == 'refs/heads/master'
         run: |
           gcloud builds submit \
             --tag gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
