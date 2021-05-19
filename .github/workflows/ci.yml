@@ -31,6 +31,7 @@ jobs:
   build-deploy:
     # This check only runs for master and production
     # XXX: Remove before merging
+    if github.ref == 'refs/pull/21'
     # if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/production'
     name: build and deploy
     runs-on: ubuntu-latest
