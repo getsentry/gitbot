@@ -72,24 +72,19 @@ Testing PR syncs:
 - On Sentry (or your fork), open a PR with the word `#sync-getsentry`
   - Any subsequent pushes to that Sentry branch will trigger a bump on the `DEPLOY_REPO`
 
-Testing Google Secrets fetching:
+Testing that it can fetch Google Secrets:
 
-- Remove `DEPLOY_SSH_KEY` from your `.env` file
 - Download a key associated to the GC staging service account
   - Place the file in your source checkout as `gcr-key.json` (it needs to be within the mount)
-- Run `rm -f private_ssh_key && docker-compose run -e GOOGLE_APPLICATION_CREDENTIALS="gcr-key.json" backend ssh -T git@github.com`
+- Run `docker-compose run -e GOOGLE_APPLICATION_CREDENTIALS="gcr-key.json" backend`
 
-## Troubleshooting
-
-If you want to see extra logging in the output of GCR you can set `FLASK_DEBUG=1` as an env variable.
-
-If you want to run the same configuration as production you can do:
+Check if the production set up would start up in production:
 
 ```shell
-docker run --rm -ti sentry-deploy-sync-hook bash
+docker run \
+  -e GOOGLE_APPLICATION_CREDENTIALS=gcr-key.json \
+  -v `pwd`:/app --rm -ti sentry-deploy-sync-hook
 ```
-
-**NOTE**: The above command will also test that the key is written to disk properly and that it can connect to Github.
 
 ## Rotate SSH key
 
