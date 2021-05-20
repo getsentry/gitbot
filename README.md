@@ -41,13 +41,12 @@ Test out a PR on staging:
 The GCR instances have these environments defined:
 
 - DEPLOY_REPO:
-  - `git@github.com:getsentry/getsentry` for production
-  - `git@github.com:getsentry/getsentry-test-repo` for staging
-- ENV: staging (Only applicable for staging)
-- GITHUB_WEBHOOK_SECRET: This value comes from the webhook created on the Sentry repo (or your fork)
+  - `getsentry/getsentry` for production
+  - `getsentry/getsentry-test-repo` for staging
+- ENV: staging or production
 - Images deployed from `gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook`
 
-The GCR instances can fetch the SSH key from Google Secrets without any env variables since they have a service account associated to them.
+The GCR instances can fetch the authentication token and Github webhook secret from Google Secrets without any env variables since they have a service account associated to the service.
 
 ## Repositories set up and testing
 
@@ -78,7 +77,7 @@ Testing that it can fetch Google Secrets:
   - Place the file in your source checkout as `gcr-key.json` (it needs to be within the mount)
 - Run `docker-compose run -e GOOGLE_APPLICATION_CREDENTIALS="gcr-key.json" backend`
 
-Check if the production set up would start up in production:
+Check if the production set up starts up (GCR logs can sometimes fail to show the issue):
 
 ```shell
 docker run \
@@ -86,15 +85,16 @@ docker run \
   -v `pwd`:/app --rm -ti sentry-deploy-sync-hook
 ```
 
-## Rotate SSH key
+## Rotate secret
 
 Steps:
 
 - This [Notion page](https://www.notion.so/sentry/Bot-Accounts-beea0fc35473453ab50e05e6e4d1d02d) has information as to who has access to the bot account.
-- Request a new SSH key and place in your disk
-- Call `./key_to_clipboard.sh -k path_to_kay`
-- Paste the contents of your clipboard into GCR and deploy the app
-- Request for the old key to be deleted
+- Request a new personal access token
+- Visit [Google Secrets](https://console.cloud.google.com/security/secret-manager?project=sentry-dev-tooling) and add a new version of the secret
+- Update the version of the secret in the code, commit to `master`, build and deploy the app
+- Once you see things working you can request for the original one to be deleted
+- In Google Secrets you can disable or destroy the previous version of the secret
 
 ## Requirements
 
@@ -102,9 +102,16 @@ Steps:
 
 ## Development
 
-Create [a new SSH key](https://github.com/settings/keys) (no passphrase) for this project and run this command `echo "DEPLOY_SSH_KEY='$(cat ~/.ssh/private_ssh_key)'" > .env`. Docker Compose reads by default variables defined in that file. This will will _not_ be included as part of the Docker image.
+Create [a new personal token](https://github.com/settings/tokens) for this project and run the commands below.
 
-**NOTE**: It is super important you understand that this private key will be able to commit anywhere the associated Github user can. It is encouraged you delete the private key from Github as soon as you're done doing development.
+```shell
+echo DEPLOY_SYNC_PAT=<value> > .env
+echo DEPLOY_SYNC_USER=<your_github_user> >> .env
+```
+
+**NOTE**: Docker Compose reads by default variables defined in that file. This will will _not_ be included as part of the Docker image or your Github history.
+
+**NOTE**: It is super important you understand that this token will be able to commit anywhere the associated Github user can. It is encouraged you delete this token from Github (or disk) as soon as you're done doing development.
 
 We use docker compose to help with live code reloading (since we mount a volume to the source checkout):
 

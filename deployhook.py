@@ -42,7 +42,7 @@ if not PAT:
     client = secretmanager.SecretManagerServiceClient()
     # GCP project in which to store secrets in Secret Manager.
     response = client.access_secret_version(
-        name="projects/sentry-dev-tooling/secrets/DeploySyncPat/versions/1"
+        name="projects/sentry-dev-tooling/secrets/DeploySyncPat/versions/2"
     )
     PAT = response.payload.data.decode("UTF-8")
 # This forces the production apps to explicitely have to set where to push

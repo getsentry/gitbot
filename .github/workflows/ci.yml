@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - production
   pull_request:
 
 jobs:
@@ -17,7 +16,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Build Docker image
-      # Run only on PR because it will on `build-deploy` on master & production
+      # Run only on PR because it will on `build-deploy` on master
       if: "startsWith(github.ref, 'refs/pull')"
       run: |
         docker build .
