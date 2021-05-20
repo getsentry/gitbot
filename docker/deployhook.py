@@ -10,6 +10,10 @@ from google.cloud import secretmanager
 from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
 
+import sys
+
+sys.exit(1)
+
 app = Flask(__name__)
 
 IS_DEV = app.env == "development"

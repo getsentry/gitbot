@@ -13,7 +13,7 @@ COPY requirements.txt /app/
 RUN pip install -r requirements.txt
 
 # Source code
-COPY deployhook.py /app/
+COPY docker/deployhook.py /app/
 
 # 1 worker, 4 worker threads should be more than enough.
 # --worker-class gthread is automatically set if --threads > 1.
