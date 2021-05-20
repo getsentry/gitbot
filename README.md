@@ -12,12 +12,29 @@ If a PR is opened/synchronized on Sentry and `#sync-getsentry` appears in the fi
 Production deployment: `https://sentry-deploy-sync-hook-dwunkkvj6a-uw.a.run.app/`
 Staging deployment: `https://sentry-deploy-sync-hook-staging-dwunkkvj6a-uw.a.run.app/`
 
-TODO: The CI will deploy changes from the `master` and `production` branches.
-In order to deploy to production you will need to merge the changes from `master` into `production`.
+Staging uploads the Docker image and deploys automatically once changes are merged on `master`. This is done by calling `./bin/upload.sh && ./bin/deploy.sh staging`.
 
-TODO: I've envisioned that deployments from `master` will produce and publish the image while on `production` we use the image produced in `master`. We might need to protect `production` from having pushes to it. Perhaps we need to store the sha in the Docker image.
+If you want to make deployments to production or a PR follow the next steps.
 
-If you want to test a new build on staging you can ask an owner to deploy it for you with the steps in "Manual deployment to staging".
+### Configure Google Cloud locally
+
+- [Install gcloud](https://cloud.google.com/sdk/docs/install)
+- Install the Docker GCR extension with `gcloud components install docker-credential-gcr`
+- Authenticate with `gcloud auth login`
+- Configure Docker to authenticate with GCloud `gcloud auth configure-docker`
+
+### Deploy to production
+
+Once you're ready to deploy to production type: `./bin/deploy.sh production`
+
+### Deploy PR to staging
+
+Test out a PR on staging:
+
+- Checkout the PR's code
+- Build the image & upload it `./bin/upload.sh`
+- Deploy it with `./bin/deploy.sh staging`
+- See section "Testing changes" for how to test that it is working
 
 ### GCR configuration
 
@@ -31,22 +48,6 @@ The GCR instances have these environments defined:
 - Images deployed from `gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook`
 
 The GCR instances can fetch the SSH key from Google Secrets without any env variables since they have a service account associated to them.
-
-### Manual deployment to staging
-
-Set up:
-
-- [Install gcloud](https://cloud.google.com/sdk/docs/install)
-  - Install the Docker GCR extension with `gcloud components install docker-credential-gcr`
-  - Authenticate with `gcloud auth login`
-
-Test out a PRs build on staging:
-
-- Checkout the PR's code
-- Build the image `docker build --tag sentry-deploy-sync-hook:latest .`
-  - TODO: We might need some more work to not tag it as `latest`
-- Run `bin/manual_staging_deploy.sh`
-- See section "Testing changes" for how to test that it is working
 
 ## Repositories set up and testing
 
@@ -71,24 +72,19 @@ Testing PR syncs:
 - On Sentry (or your fork), open a PR with the word `#sync-getsentry`
   - Any subsequent pushes to that Sentry branch will trigger a bump on the `DEPLOY_REPO`
 
-Testing Google Secrets fetching:
+Testing that it can fetch Google Secrets:
 
-- Remove `DEPLOY_SSH_KEY` from your `.env` file
 - Download a key associated to the GC staging service account
   - Place the file in your source checkout as `gcr-key.json` (it needs to be within the mount)
-- Run `rm -f private_ssh_key && docker-compose run -e GOOGLE_APPLICATION_CREDENTIALS="gcr-key.json" backend ssh -T git@github.com`
+- Run `docker-compose run -e GOOGLE_APPLICATION_CREDENTIALS="gcr-key.json" backend`
 
-## Troubleshooting
-
-If you want to see extra logging in the output of GCR you can set `FLASK_DEBUG=1` as an env variable.
-
-If you want to run the same configuration as production you can do:
+Check if the production set up would start up in production:
 
 ```shell
-docker run -e DEPLOY_SSH_KEY="$(cat private_ssh_key)" --rm -ti getsentry/sync-hook bash
+docker run \
+  -e GOOGLE_APPLICATION_CREDENTIALS=gcr-key.json \
+  -v `pwd`:/app --rm -ti sentry-deploy-sync-hook
 ```
-
-**NOTE**: The above command will also test that the key is written to disk properly and that it can connect to Github.
 
 ## Rotate SSH key
 

@@ -12,13 +12,6 @@ WORKDIR /app
 COPY requirements.txt /app/
 RUN pip install -r requirements.txt
 
-# This helps ssh adding Github servers automatically w/o prompt
-COPY docker/ssh_config /root/.ssh/config
-# These scripts will generate /app/private_ssh_key based on DEPLOY_SSH_KEY or Google Cloud Secret
-COPY docker/write_to_disk.py /app/docker/
-COPY docker/entrypoint.sh /app/docker/
-ENTRYPOINT exec /app/docker/entrypoint.sh $0 $@
-
 # Source code
 COPY deployhook.py /app/
 

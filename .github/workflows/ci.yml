@@ -29,9 +29,7 @@ jobs:
         docker-compose down
 
   build-deploy:
-    # This check only runs for master and production
-    # XXX: Remove before merging
-    # if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/production'
+    if: github.ref == 'refs/heads/master'
     name: build and deploy
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -40,49 +38,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Build Docker image
-        run: |
-          docker build --tag sentry-deploy-sync-hook:latest .
-
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v0.2.1
         with:
           service_account_email: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
 
-      - name: GCR Service Info
-        id: info
-        run: |
-          if [ $GITHUB_REF == 'refs/heads/production' ]; then
-            echo "::set-output name=service::sentry-deploy-sync-hook"
-            echo "::set-output name=environment::production"
-          else
-            echo "::set-output name=service::sentry-deploy-sync-hook-staging"
-            echo "::set-output name=environment::staging"
-          fi
-
       # Only staging uploads an image to the registry
       - name: Upload
-        # XXX: Remove before merging
-        # if: github.ref == 'refs/heads/master'
         run: |
-          gcloud builds submit \
-            --tag gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
-            --project=sentry-dev-tooling
-
-      # Deploy the latest image
-      - name: Deploy
-        id: deploy
-        run: |
+          ./bin/upload.sh
           echo "::set-output name=deploy-start::$(date +%s)"
-          gcloud run deploy "$SERVICE" \
-            --image gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
-            --project=sentry-dev-tooling \
-            --platform managed \
-            --allow-unauthenticated \
-            --region=us-central1
-        env:
-          SERVICE: ${{ steps.info.outputs.service }}
+          ./bin/deploy.sh staging
 
       - name: Sentry Release
         uses: getsentry/action-release@v1.0.0
@@ -91,5 +58,5 @@ jobs:
           SENTRY_PROJECT: sentry-deploy-sync-hook
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         with:
-          environment: ${{ steps.info.outputs.environment }}
+          environment: staging
           started_at: ${{ steps.deploy.outputs.deploy-start }}
