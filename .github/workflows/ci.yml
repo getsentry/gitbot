@@ -26,7 +26,8 @@ jobs:
         docker-compose down
 
   build-deploy:
-    if: github.ref == 'refs/heads/master'
+    # XXX: Disable for now
+    # if: github.ref == 'refs/heads/master'
     name: build and deploy
     runs-on: ubuntu-latest
     timeout-minutes: 10

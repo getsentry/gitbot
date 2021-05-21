@@ -24,7 +24,7 @@ COPY deployhook.py /app/
 # --timeout 0 disables gunicorn's automatic worker restarting.
 # "Workers silent for more than this many seconds are killed and restarted."
 
+ENV FOO=1
 # If things get bad you might want to --max-requests, --max-requests-jitter, --workers 2.
-# TODO: memory usage metrics
-
-CMD ["gunicorn", "--bind", ":8080", "--workers", "1", "--threads", "4", "--timeout", "0", "deployhook:app"]
+ENTRYPOINT ["gunicorn"]
+CMD ["--bind", ":8080", "--workers", "1", "--threads", "4", "--timeout", "0", "deployhook:app"]
