@@ -24,7 +24,7 @@ COPY deployhook.py /app/
 # --timeout 0 disables gunicorn's automatic worker restarting.
 # "Workers silent for more than this many seconds are killed and restarted."
 
-ENV FOO=1
 # If things get bad you might want to --max-requests, --max-requests-jitter, --workers 2.
-ENTRYPOINT ["gunicorn"]
-CMD ["--bind", ":8080", "--workers", "1", "--threads", "4", "--timeout", "0", "deployhook:app"]
+# XXX: Sadly I need to use this until I figure out how to get rid of the entrypoint
+ENTRYPOINT exec /app/docker/entrypoint.sh $0 $@
+CMD ["gunicorn", "--bind", ":8080", "--workers", "1", "--threads", "4", "--timeout", "0", "deployhook:app"]
