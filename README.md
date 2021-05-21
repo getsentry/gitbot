@@ -10,7 +10,7 @@ If a PR is opened/synchronized on Sentry and `#sync-getsentry` appears in the fi
 ## Deployment
 
 Production deployment: `https://sentry-deploy-sync-hook-dwunkkvj6a-uc.a.run.app`
-Staging deployment: `https://sentry-deploy-sync-hook-staging-dwunkkvj6a-uc.a.run.app/`
+Staging deployment: `https://sentry-deploy-sync-hook-staging-dwunkkvj6a-uc.a.run.app`
 
 Staging uploads the Docker image and deploys automatically once changes are merged on `master`. This is done by calling `./bin/upload.sh && ./bin/deploy.sh staging`.
 
