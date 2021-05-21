@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - master
-  # XXX: Disable before merging
+  # XXX: Disable before merging. This allows development on the PR
   pull_request:
 
 jobs:
@@ -26,6 +26,7 @@ jobs:
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v0.5.0
         with:
+          # Currently only supporting staging releases
           service: sentry-deploy-sync-hook-staging 
           image: gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook
           credentials: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
