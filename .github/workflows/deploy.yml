@@ -1,6 +1,6 @@
 name: Deploy
 
-# XXX: Add support for triggering workflow manually for a production deployment OR a staging deployment
+# TODO: Add support for triggering workflow manually for a production deployment OR a staging deployment
 on:
   push:
     branches:
@@ -32,23 +32,6 @@ jobs:
 
       - name: Use Output
         run: curl "${{ steps.deploy.outputs.url }}"
-
-      # - name: Setup gcloud CLI
-      #   uses: google-github-actions/setup-gcloud@v0.2.1
-      #   with:
-      #     project_id: ${{ secrets.GCP_PROJECT_ID }}
-      #     service_account_email: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
-      #     export_default_credentials: true
-      #     # service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-      
-      # - name: Use gcloud CLI
-      #   run: gcloud info
-
-      # # We build, upload and deploy the staging app
-      # - name: Upload
-      #   run: |
-      #     echo "::set-output name=deploy-start::$(date +%s)"
-      #     ./bin/upload.sh && ./bin/deploy.sh staging
 
       - name: Sentry Release
         uses: getsentry/action-release@v1.0.0
