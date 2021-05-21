@@ -11,17 +11,15 @@ jobs:
     name: docker builds
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    if: github.event_name == 'pull_request'
     steps:
     - name: Checkout
       uses: actions/checkout@v2
 
     - name: Build Docker image
-      # Run only on PR because it will on `build-deploy` on master
-      if: "startsWith(github.ref, 'refs/pull')"
       run: |
         docker build .
 
-    # XXX: Add check that verifies that a valid SSH key was used
     - name: Test local dev starts up
       run: |
         docker-compose up -d
@@ -43,7 +41,7 @@ jobs:
           service_account_email: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
 
-      # Only staging uploads an image to the registry
+      # We build, upload and deploy the staging app
       - name: Upload
         run: |
           ./bin/upload.sh
