@@ -26,5 +26,6 @@ COPY deployhook.py /app/
 
 # If things get bad you might want to --max-requests, --max-requests-jitter, --workers 2.
 # XXX: Sadly I need to use this until I figure out how to get rid of the entrypoint
+COPY docker/entrypoint.sh /app/docker/
 ENTRYPOINT exec /app/docker/entrypoint.sh $0 $@
 CMD ["gunicorn", "--bind", ":8080", "--workers", "1", "--threads", "4", "--timeout", "0", "deployhook:app"]
