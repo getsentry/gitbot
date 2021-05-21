@@ -1,0 +1,41 @@
+name: Deploy
+
+# XXX: Add support for triggering workflow manually for a production deployment OR a staging deployment
+on:
+  push:
+    branches:
+      - master
+  # XXX: Disable before merging
+  pull_request:
+
+jobs:
+  build-deploy:
+    name: build and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SENTRY_ORG: sentry
+      SENTRY_PROJECT: sentry-deploy-sync-hook
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v0.2.1
+        with:
+          service_account_email: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+          service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+
+      # We build, upload and deploy the staging app
+      - name: Upload
+        run: |
+          echo "::set-output name=deploy-start::$(date +%s)"
+          ./bin/upload.sh && ./bin/deploy.sh staging
+
+      - name: Sentry Release
+        uses: getsentry/action-release@v1.0.0
+        with:
+          environment: staging
+          started_at: ${{ steps.deploy.outputs.deploy-start }}
