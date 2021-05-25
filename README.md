@@ -102,7 +102,7 @@ Steps:
 
 ## Development
 
-Create [a new personal token](https://github.com/settings/tokens) for this project and run the commands below.
+Create [a new personal access token](https://github.com/settings/tokens/new) for this project and run the commands below.
 
 ```shell
 echo DEPLOY_SYNC_PAT=<value> > .env
