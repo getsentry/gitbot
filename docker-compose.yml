@@ -1,0 +1,23 @@
+version: "3"
+# This docker compose file is to help local development by allowing live code
+# reloading with a volume mount
+services:
+  backend:
+    container_name: backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DEPLOY_REPO=${DEPLOY_REPO:-getsentry/getsentry-test-repo}
+      # You need to create a personal access token with repo level access
+      - DEPLOY_SYNC_USER
+      - DEPLOY_SYNC_PAT
+      - DRY_RUN=${DRY_RUN:-True}
+      - FLASK_APP=deployhook.py
+      - FLASK_ENV=development
+      - FLASK_RUN_HOST=0.0.0.0
+    command: flask run
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"

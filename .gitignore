@@ -1,3 +1,5 @@
+.env
 venv
 *.pyc
 *.pyo
+gcr-key.json

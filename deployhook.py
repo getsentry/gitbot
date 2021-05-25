@@ -3,9 +3,10 @@ import hashlib
 import os
 import tempfile
 import subprocess
+from distutils import util
 
 import sentry_sdk
-from contextlib import contextmanager
+from google.cloud import secretmanager
 from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
 
@@ -14,6 +15,9 @@ app = Flask(__name__)
 IS_DEV = app.env == "development"
 
 if not IS_DEV:
+    ENV = os.environ.get("ENV", "production")
+    app.logger.info(f"Environment: {ENV}")
+
     sentry_sdk.init(
         dsn="https://95cc5cfe034b4ff8b68162078978935c@o1.ingest.sentry.io/5748916",
         integrations=[FlaskIntegration()],
@@ -21,6 +25,7 @@ if not IS_DEV:
         # of transactions for performance monitoring.
         # We recommend adjusting this value in production.
         traces_sample_rate=1.0,
+        environment=ENV,
     )
 
 GETSENTRY_OWNER = "getsentry"
@@ -28,88 +33,92 @@ SENTRY_REPO = "{}/sentry".format(GETSENTRY_OWNER)
 
 DEPLOY_MARKER = "#sync-getsentry"
 
-DEPLOY_REPO = "git@github.com:getsentry/getsentry"
+PAT = os.environ.get("DEPLOY_SYNC_PAT")
+# On GCR we use Google secrets to fetch the PAT
+if not PAT:
+    # If you're inside of GCR you don't need to set any env variables
+    # If you want to test locally you will have to set GOOGLE_APPLICATION_CREDENTIALS to the path of the GCR key
+    # Create the Secret Manager client.
+    client = secretmanager.SecretManagerServiceClient()
+    # GCP project in which to store secrets in Secret Manager.
+    response = client.access_secret_version(
+        name="projects/sentry-dev-tooling/secrets/DeploySyncPat/versions/2"
+    )
+    PAT = response.payload.data.decode("UTF-8")
+# This forces the production apps to explicitely have to set where to push
+DEPLOY_REPO = os.environ["DEPLOY_REPO"]
+DEPLOY_REPO_WITH_PAT = (
+    f"https://{os.environ['DEPLOY_SYNC_USER']}:{PAT}@github.com/{DEPLOY_REPO}"
+)
 DEPLOY_BRANCH = "master"
 COMMITTER_NAME = "Sentry Bot"
 COMMITTER_EMAIL = "bot@getsentry.com"
-SSH_KEY = os.environ["DEPLOY_SSH_KEY"] + "\n"
-
-PLUGIN_REPOS = [
-    "getsentry/sentry-plugins",
-    "getsentry/sentry-auth-saml2",
-    "getsentry/sentry-auth-google",
-    "getsentry/sentry-auth-github",
-]
 
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 
-
-@contextmanager
-def ssh_environment():
-    key_file = tempfile.mktemp()
-    with open(key_file, "w") as f:
-        f.write(SSH_KEY)
-    os.chmod(key_file, 0o600)
-
-    exec_file = tempfile.mktemp()
-    with open(exec_file, "w") as f:
-        f.write(
-            """#!/bin/sh
-        ssh -i "%s" -o StrictHostKeyChecking=no "$@"
-        """
-            % key_file
-        )
-    os.chmod(exec_file, 0o700)
-    yield exec_file
+DRY_RUN = bool(util.strtobool(os.environ.get("DRY_RUN", "False")))
+if DRY_RUN:
+    app.logger.info("Dry run mode: on")
+else:
+    app.logger.info("Dry run mode: *OFF* <--!")
+    app.logger.info(f"Code bumps will be pushed to {DEPLOY_BRANCH} on {DEPLOY_REPO}")
 
 
 def bump_version(branch, script, *args):
-    with ssh_environment() as ssh_executable:
-        repo_root = tempfile.mkdtemp()
+    repo_root = tempfile.mkdtemp()
 
-        def cmd(*args, **opts):
-            opts.setdefault("cwd", repo_root)
-            env = opts.setdefault("env", {})
-            env["GIT_SSH"] = ssh_executable
-            return subprocess.Popen(list(args), **opts).wait()
+    def cmd(*args, **opts):
+        # Do not show the output of the git clone command since the PAT shows in the output
+        opts.setdefault("cwd", repo_root)
+        return subprocess.Popen(list(args), **opts).wait()
 
-        # The branch has to be created manually in getsentry/getsentry!
-        if (
-            cmd(
-                "git",
-                "clone",
-                "--depth",
-                "1",
-                "-b",
-                branch,
-                DEPLOY_REPO,
-                repo_root,
-                cwd=None,
-            )
-            != 0
-        ):
-            return False, "Cannot clone branch {} from {}.".format(branch, DEPLOY_REPO)
+    # The branch has to be created manually in getsentry/getsentry!
+    if (
+        cmd(
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "-b",
+            branch,
+            DEPLOY_REPO_WITH_PAT,
+            repo_root,
+            cwd=None,
+        )
+        != 0
+    ):
+        return False, "Cannot clone branch {} from {}.".format(branch, DEPLOY_REPO)
 
-        cmd("git", "config", "user.name", COMMITTER_NAME)
-        cmd("git", "config", "user.email", COMMITTER_EMAIL)
-        cmd(script, *args)
-        for _ in range(5):
-            if cmd("git", "push", "origin", branch) == 0:
-                break
-            cmd("git", "pull", "--rebase", "origin", branch)
+    cmd("git", "config", "user.name", COMMITTER_NAME)
+    cmd("git", "config", "user.email", COMMITTER_EMAIL)
+    cmd(script, *args)
+    push_args = None
+    if DRY_RUN:
+        push_args = ("git", "push", "origin", "--dry-run", branch)
+    else:
+        push_args = ("git", "push", "origin", branch)
+    for _ in range(5):
+        if cmd(*push_args) == 0:
+            break
+        cmd("git", "pull", "--rebase", "origin", branch)
 
-        return True, "Executed: {!r}".format([script] + list(args))
+    return True, "Executed: {!r}".format([script] + list(args))
 
 
 def process_push():
     """Handle "push" events to master branch"""
+    # XXX: On what occassions would we want to use request.args.get("branches")?
+    # Pushes to master and test-branch will be acted on
     branches = set(
-        "refs/heads/" + x for x in (request.args.get("branches") or "master").split(",")
+        f"refs/heads/{x}"
+        for x in (request.args.get("branches") or "master,test-branch").split(",")
     )
 
     data = request.get_json()
+    app.logger.info(data)
 
     if data.get("ref") not in branches:
+        app.logger.info(f'{data.get("ref")} not in {branches}')
         return jsonify(updated=False, reason="Commit against untracked branch.")
 
     repo = data["repository"]["full_name"]
@@ -121,7 +130,7 @@ def process_push():
     author_name = author_data.get("name")
     author_email = author_data.get("email")
     if author_name and author_email:
-        author = u"{} <{}>".format(author_name, author_email).encode("utf8")
+        author = f"{author_name} <{author_email}>"
     else:
         author = None
 
@@ -130,14 +139,15 @@ def process_push():
         if author is not None:
             args += ["--author", author]
 
-        if repo == SENTRY_REPO:
+        # Support Sentry fork when running on development mode
+        if (IS_DEV and repo.split("/")[1] == "sentry") or (repo == SENTRY_REPO):
             updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-sentry", *args)
-        elif repo in PLUGIN_REPOS:
-            args += ["--repo", repo]
-            updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-plugins", *args)
         else:
             updated = False
             reason = "Unknown repository"
+
+        if not updated:
+            app.logger.info(f"We found some issues: {reason}")
         return jsonify(updated=updated, reason=reason)
 
     return jsonify(updated=False, reason="Commit not relevant for deploy sync.")
@@ -146,25 +156,31 @@ def process_push():
 def process_pull_request():
     """Handle "pull_request" events from PRs with the deploy marker set"""
     data = request.get_json()
+    app.logger.info(data)
 
-    if data.get("action") not in ["synchronize", "opened"]:
+    action = data.get("action")
+    if action not in ["synchronize", "opened"]:
+        app.logger.info(f"Action: '{action}' not in 'synchronize' or 'opened'")
         return jsonify(updated=False, reason="Invalid action for pull_request event.")
-
-    if data["repository"]["full_name"] != SENTRY_REPO:
-        return jsonify(updated=False, reason="Unknown repository")
 
     # Check that the PR is from the same repo
     pull_request = data["pull_request"]
     head = pull_request["head"]
     base = pull_request["base"]
-    if (
-        head["repo"]["full_name"] != SENTRY_REPO
-        or base["repo"]["full_name"] != SENTRY_REPO
-    ):
-        return jsonify(updated=False, reason="Invalid head or base repos.")
 
-    if pull_request["merged"]:
-        return jsonify(updated=False, reason="Pull request is already merged.")
+    # No need to make all these checks if we're in development
+    if not IS_DEV:
+        if data["repository"]["full_name"] != SENTRY_REPO:
+            return jsonify(updated=False, reason="Unknown repository")
+
+        if (
+            head["repo"]["full_name"] != SENTRY_REPO
+            or base["repo"]["full_name"] != SENTRY_REPO
+        ):
+            return jsonify(updated=False, reason="Invalid head or base repos.")
+
+        if pull_request["merged"]:
+            return jsonify(updated=False, reason="Pull request is already merged.")
 
     body = pull_request["body"] or ""
     if body.find(DEPLOY_MARKER) == -1:
@@ -173,6 +189,8 @@ def process_pull_request():
     ref_sha = head["sha"]
     branch = head["ref"]
     if ref_sha:
+        # TODO: It would be ideal if we had a way to communicate back (repo or Slack)
+        # that we did bump the version successfully
         updated, reason = bump_version(branch, "bin/bump-sentry", ref_sha)
         return jsonify(updated=updated, reason=reason)
 
