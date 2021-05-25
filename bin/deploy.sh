@@ -15,7 +15,7 @@ if [ "$arg" == "staging" ]; then
 fi
 
 gcloud run deploy "$SERVICE" \
-	--image gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
+	--image us.gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
 	--project=sentry-dev-tooling \
 	--platform managed \
 	--allow-unauthenticated \
