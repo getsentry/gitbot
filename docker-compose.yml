@@ -7,11 +7,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: sentry-deploy-sync-hook
-    entrypoint: "./docker/entrypoint.sh"
     environment:
-      - DEPLOY_REPO=${DEPLOY_REPO:-git@github.com:getsentry/getsentry-test-repo}
-      - DEPLOY_SSH_KEY
+      - DEPLOY_REPO=${DEPLOY_REPO:-getsentry/getsentry-test-repo}
+      # You need to create a personal access token with repo level access
+      - DEPLOY_SYNC_USER
+      - DEPLOY_SYNC_PAT
       - DRY_RUN=${DRY_RUN:-True}
       - FLASK_APP=deployhook.py
       - FLASK_ENV=development

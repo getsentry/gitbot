@@ -6,6 +6,7 @@ import subprocess
 from distutils import util
 
 import sentry_sdk
+from google.cloud import secretmanager
 from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
 
@@ -14,6 +15,9 @@ app = Flask(__name__)
 IS_DEV = app.env == "development"
 
 if not IS_DEV:
+    ENV = os.environ.get("ENV", "production")
+    app.logger.info(f"Environment: {ENV}")
+
     sentry_sdk.init(
         dsn="https://95cc5cfe034b4ff8b68162078978935c@o1.ingest.sentry.io/5748916",
         integrations=[FlaskIntegration()],
@@ -21,6 +25,7 @@ if not IS_DEV:
         # of transactions for performance monitoring.
         # We recommend adjusting this value in production.
         traces_sample_rate=1.0,
+        environment=ENV,
     )
 
 GETSENTRY_OWNER = "getsentry"
@@ -28,15 +33,30 @@ SENTRY_REPO = "{}/sentry".format(GETSENTRY_OWNER)
 
 DEPLOY_MARKER = "#sync-getsentry"
 
-DEPLOY_REPO = os.environ.get("DEPLOY_REPO", "git@github.com:getsentry/getsentry")
+PAT = os.environ.get("DEPLOY_SYNC_PAT")
+# On GCR we use Google secrets to fetch the PAT
+if not PAT:
+    # If you're inside of GCR you don't need to set any env variables
+    # If you want to test locally you will have to set GOOGLE_APPLICATION_CREDENTIALS to the path of the GCR key
+    # Create the Secret Manager client.
+    client = secretmanager.SecretManagerServiceClient()
+    # GCP project in which to store secrets in Secret Manager.
+    response = client.access_secret_version(
+        name="projects/sentry-dev-tooling/secrets/DeploySyncPat/versions/2"
+    )
+    PAT = response.payload.data.decode("UTF-8")
+# This forces the production apps to explicitely have to set where to push
+DEPLOY_REPO = os.environ["DEPLOY_REPO"]
+DEPLOY_REPO_WITH_PAT = (
+    f"https://{os.environ['DEPLOY_SYNC_USER']}:{PAT}@github.com/{DEPLOY_REPO}"
+)
 DEPLOY_BRANCH = "master"
 COMMITTER_NAME = "Sentry Bot"
 COMMITTER_EMAIL = "bot@getsentry.com"
-SSH_KEY = os.environ["DEPLOY_SSH_KEY"] + "\n"
 
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 
-DRY_RUN = bool(util.strtobool(os.environ.get("DRY_RUN", False)))
+DRY_RUN = bool(util.strtobool(os.environ.get("DRY_RUN", "False")))
 if DRY_RUN:
     app.logger.info("Dry run mode: on")
 else:
@@ -48,12 +68,8 @@ def bump_version(branch, script, *args):
     repo_root = tempfile.mkdtemp()
 
     def cmd(*args, **opts):
+        # Do not show the output of the git clone command since the PAT shows in the output
         opts.setdefault("cwd", repo_root)
-        try:
-            app.logger.info(" ".join(args))
-        except Exception:
-            # XXX: Report via Sentry later on
-            app.logger.warning("Investigate why we could not log the args.")
         return subprocess.Popen(list(args), **opts).wait()
 
     # The branch has to be created manually in getsentry/getsentry!
@@ -65,7 +81,7 @@ def bump_version(branch, script, *args):
             "1",
             "-b",
             branch,
-            DEPLOY_REPO,
+            DEPLOY_REPO_WITH_PAT,
             repo_root,
             cwd=None,
         )

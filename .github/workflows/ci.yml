@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  docker:
+    name: docker & dev env works
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Build Docker image
+      run: |
+        docker build .
+
+    - name: Test local dev starts up
+      run: |
+        docker-compose up -d
+        docker-compose down
