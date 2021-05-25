@@ -208,6 +208,8 @@ def index():
         signature = hmac.new(
             GITHUB_WEBHOOK_SECRET.encode("utf-8"), request.data, hashlib.sha1
         ).hexdigest()
+        if not request.headers.get("X-Hub-Signature"):
+            return respond("There's no Github secret.")
         if not hmac.compare_digest(
             signature,
             str(request.headers.get("X-Hub-Signature", "").replace("sha1=", "")),
