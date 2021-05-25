@@ -11,8 +11,6 @@ on:
   push:
     branches:
       - master
-  # XXX: Disable before merging. This allows development on the PR
-  pull_request:
 
 jobs:
   build-deploy:
