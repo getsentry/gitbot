@@ -10,5 +10,5 @@ IMAGE=gcr.io/${PROJECT}/${NAME}
 # docker tag ${NAME} ${IMAGE}
 # docker push ${IMAGE}
 gcloud builds submit \
-    --tag gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
+    --tag us.gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
     --project=sentry-dev-tooling
