@@ -12,7 +12,7 @@ If a PR is opened/synchronized on Sentry and `#sync-getsentry` appears in the fi
 Production deployment: `https://sentry-deploy-sync-hook-dwunkkvj6a-uc.a.run.app`
 Staging deployment: `https://sentry-deploy-sync-hook-staging-dwunkkvj6a-uc.a.run.app`
 
-Staging uploads the Docker image and deploys automatically once changes are merged on `master`. This is done by calling `./bin/upload.sh && ./bin/deploy.sh staging`.
+The CI uploads the Docker image and deploys it once changes are merged on `master`.
 
 If you want to make deployments to production or a PR follow the next steps.
 
@@ -32,9 +32,15 @@ Once you're ready to deploy to production type: `./bin/deploy.sh production`
 Test out a PR on staging:
 
 - Checkout the PR's code
-- Build the image & upload it `./bin/upload.sh`
-- Deploy it with `./bin/deploy.sh staging`
+- Build the image, upload it and deploy it with the steps below
 - See section "Testing changes" for how to test that it is working
+
+```shell
+gcloud builds submit \
+    --tag us.gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
+    --project=sentry-dev-tooling
+./bin/deploy.sh staging
+```
 
 ### GCR configuration
 
@@ -102,7 +108,7 @@ Steps:
 
 ## Development
 
-Create [a new personal access token](https://github.com/settings/tokens/new) for this project and run the commands below.
+Create [a new personal access token](https://github.com/settings/tokens/new) for this project with `repo` access and run the commands below.
 
 ```shell
 echo DEPLOY_SYNC_PAT=<value> > .env
