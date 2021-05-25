@@ -1,5 +1,6 @@
 import hmac
 import hashlib
+import logging
 import os
 import tempfile
 import subprocess
@@ -11,6 +12,7 @@ from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 app = Flask(__name__)
+app.logger.addHandler(logging.StreamHandler())
 
 IS_DEV = app.env == "development"
 
@@ -62,6 +64,11 @@ if DRY_RUN:
 else:
     app.logger.info("Dry run mode: *OFF* <--!")
     app.logger.info(f"Code bumps will be pushed to {DEPLOY_BRANCH} on {DEPLOY_REPO}")
+
+
+def respond(reason, updated=False):
+    app.logger.info(reason)
+    return jsonify(updated=updated, reason=reason)
 
 
 def bump_version(branch, script, *args):
@@ -119,7 +126,7 @@ def process_push():
 
     if data.get("ref") not in branches:
         app.logger.info(f'{data.get("ref")} not in {branches}')
-        return jsonify(updated=False, reason="Commit against untracked branch.")
+        return respond("Commit against untracked branch.")
 
     repo = data["repository"]["full_name"]
     head_commit = data.get("head_commit", {})
@@ -134,6 +141,8 @@ def process_push():
     else:
         author = None
 
+    updated = False
+    reason = "Commit not relevant for deploy sync."
     if ref_sha is not None:
         args = [ref_sha]
         if author is not None:
@@ -143,14 +152,9 @@ def process_push():
         if (IS_DEV and repo.split("/")[1] == "sentry") or (repo == SENTRY_REPO):
             updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-sentry", *args)
         else:
-            updated = False
             reason = "Unknown repository"
 
-        if not updated:
-            app.logger.info(f"We found some issues: {reason}")
-        return jsonify(updated=updated, reason=reason)
-
-    return jsonify(updated=False, reason="Commit not relevant for deploy sync.")
+    return respond(reason=reason, updated=updated)
 
 
 def process_pull_request():
@@ -161,7 +165,7 @@ def process_pull_request():
     action = data.get("action")
     if action not in ["synchronize", "opened"]:
         app.logger.info(f"Action: '{action}' not in 'synchronize' or 'opened'")
-        return jsonify(updated=False, reason="Invalid action for pull_request event.")
+        return respond("Invalid action for pull_request event.")
 
     # Check that the PR is from the same repo
     pull_request = data["pull_request"]
@@ -171,20 +175,20 @@ def process_pull_request():
     # No need to make all these checks if we're in development
     if not IS_DEV:
         if data["repository"]["full_name"] != SENTRY_REPO:
-            return jsonify(updated=False, reason="Unknown repository")
+            return respond("Unknown repository")
 
         if (
             head["repo"]["full_name"] != SENTRY_REPO
             or base["repo"]["full_name"] != SENTRY_REPO
         ):
-            return jsonify(updated=False, reason="Invalid head or base repos.")
+            return respond("Invalid head or base repos.")
 
         if pull_request["merged"]:
-            return jsonify(updated=False, reason="Pull request is already merged.")
+            return respond("Pull request is already merged.")
 
     body = pull_request["body"] or ""
     if body.find(DEPLOY_MARKER) == -1:
-        return jsonify(updated=False, reason="Deploy marker not found.")
+        return respond("Deploy marker not found.")
 
     ref_sha = head["sha"]
     branch = head["ref"]
@@ -192,9 +196,9 @@ def process_pull_request():
         # TODO: It would be ideal if we had a way to communicate back (repo or Slack)
         # that we did bump the version successfully
         updated, reason = bump_version(branch, "bin/bump-sentry", ref_sha)
-        return jsonify(updated=updated, reason=reason)
+        return respond(updated=updated, reason=reason)
 
-    return jsonify(updated=False, reason="Commit not relevant for deploy sync.")
+    return respond("Commit not relevant for deploy sync.")
 
 
 @app.route("/", methods=["POST"])
@@ -204,11 +208,13 @@ def index():
         signature = hmac.new(
             GITHUB_WEBHOOK_SECRET.encode("utf-8"), request.data, hashlib.sha1
         ).hexdigest()
+        if not request.headers.get("X-Hub-Signature"):
+            return respond("There's no Github secret.")
         if not hmac.compare_digest(
             signature,
             str(request.headers.get("X-Hub-Signature", "").replace("sha1=", "")),
         ):
-            return jsonify(updated=False, reason="Cannot validate payload signature.")
+            return respond(reason="Cannot validate payload signature.")
 
     event_type = request.headers.get("X-GitHub-Event")
 
@@ -217,13 +223,8 @@ def index():
     elif event_type == "pull_request":
         return process_pull_request()
     else:
-        return jsonify(updated=False, reason="Unsupported event type.")
+        return respond("Unsupported event type.")
 
-
-if not app.debug:
-    import logging
-
-    app.logger.addHandler(logging.StreamHandler())
 
 if not IS_DEV and not GITHUB_WEBHOOK_SECRET:
     raise SystemError("Empty GITHUB_WEBHOOK_SECRET!")
