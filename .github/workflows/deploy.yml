@@ -17,18 +17,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      
+
       - name: Deploy to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v0.5.0
         with:
           # Currently only supporting staging releases
-          service: sentry-deploy-sync-hook-staging 
+          service: sentry-deploy-sync-hook-staging
           image: us.gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook
           credentials: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-
-      - name: Use Output
-        run: curl "${{ steps.deploy.outputs.url }}"
 
       - name: Sentry Release
         uses: getsentry/action-release@v1.0.0
