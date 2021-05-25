@@ -13,10 +13,6 @@ jobs:
     name: build and deploy
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      SENTRY_ORG: sentry
-      SENTRY_PROJECT: sentry-deploy-sync-hook
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
     steps:
       - name: Checkout
@@ -28,31 +24,18 @@ jobs:
         with:
           # Currently only supporting staging releases
           service: sentry-deploy-sync-hook-staging 
-          image: gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook
+          image: us.gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook
           credentials: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
 
       - name: Use Output
         run: curl "${{ steps.deploy.outputs.url }}"
-
-      # - name: Setup gcloud CLI
-      #   uses: google-github-actions/setup-gcloud@v0.2.1
-      #   with:
-      #     project_id: ${{ secrets.GCP_PROJECT_ID }}
-      #     service_account_email: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
-      #     export_default_credentials: true
-      #     # service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-      
-      # - name: Use gcloud CLI
-      #   run: gcloud info
-
-      # # We build, upload and deploy the staging app
-      # - name: Upload
-      #   run: |
-      #     echo "::set-output name=deploy-start::$(date +%s)"
-      #     ./bin/upload.sh && ./bin/deploy.sh staging
 
       - name: Sentry Release
         uses: getsentry/action-release@v1.0.0
         with:
           environment: staging
           started_at: ${{ steps.deploy.outputs.deploy-start }}
+        env:
+          SENTRY_ORG: sentry
+          SENTRY_PROJECT: sentry-deploy-sync-hook
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
