@@ -11,10 +11,9 @@ env:
 
 on:
   push:
-    branches:
-      - master
-  # XXX: Temp change
-  pull_request:
+    # XXX: Temp change
+    # branches:
+    #   - master
   workflow_dispatch:
     inputs:
       service:
