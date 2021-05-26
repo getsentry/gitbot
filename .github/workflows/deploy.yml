@@ -4,9 +4,8 @@ env:
 
 on:
   push:
-  # XXX: Temp change so we can use this branch as if it was master
-  # branches:
-  #   - master
+    branches:
+      - master
   workflow_dispatch:
     inputs:
       environment:
@@ -58,11 +57,11 @@ jobs:
           image: us.gcr.io/${{ env.PROJECT_ID }}/sentry-deploy-sync-hook:${{ github.sha }}
           region: us-central1
 
-      # - name: Sentry Release
-      #   uses: getsentry/action-release@v1.1.5
-      #   with:
-      #     environment: ${{ steps.info.outputs.environment }}
-      #   env:
-      #     SENTRY_ORG: sentry
-      #     SENTRY_PROJECT: sentry-deploy-sync-hook
-      #     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      - name: Sentry Release
+        uses: getsentry/action-release@v1.1.5
+        with:
+          environment: ${{ steps.info.outputs.environment }}
+        env:
+          SENTRY_ORG: sentry
+          SENTRY_PROJECT: sentry-deploy-sync-hook
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
