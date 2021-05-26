@@ -4,22 +4,13 @@ env:
   # XXX: On the next pass, add support for triggering the workflow manually for a production deployment
   # OR a staging deployment. Switch back to automatically deploying staging
   # Currently only supporting production
-  SERVICE: sentry-deploy-sync-hook-staging
-  # XXX: This needs to be determined based on the service
-  ENVIRONMENT: staging
+  SERVICE: sentry-deploy-sync-hook
   REGION: us-central1
 
 on:
   push:
-    # XXX: Temp change
-    # branches:
-    #   - master
-  workflow_dispatch:
-    inputs:
-      service:
-        description: 'GCR service to deploy to.'
-        required: true
-        default: 'sentry-deploy-sync-hook-staging'
+    branches:
+      - master
 
 jobs:
   build-deploy:
@@ -30,8 +21,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
 
       - name: Setup Cloud SDK
         uses: google-github-actions/setup-gcloud@v0.2.1
@@ -46,28 +35,21 @@ jobs:
 
       - name: Build and Push Container
         run: |-
-          docker build -t us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA .
-          docker push us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA
+          docker build -t us.gcr.io/$PROJECT_ID/$SERVICE:$GITHUB_SHA .
+          docker push us.gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v0.5.0
         with:
           service: ${{ env.SERVICE }}
-          image: us.gcr.io/${{ env.PROJECT_ID }}/sentry-deploy-sync-hook:${{ github.sha }}
+          image: us.gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{  github.sha }}
           region: ${{ env.REGION }}
-      
-      - name: Env variables
-        run: |-
-          env | sort
-          echo "- service ${{ github.event.inputs.service }}!"
-          echo "- sha ${{ github.sha }}!"
-          echo "- ref ${{ github.ref }}!"
 
-      # - name: Sentry Release
-      #   uses: getsentry/action-release@v1.1.5
-      #   with:
-      #     environment: ${{ env.ENVIRONMENT }}
-      #   env:
-      #     SENTRY_ORG: sentry
-      #     SENTRY_PROJECT: sentry-deploy-sync-hook
-      #     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      - name: Sentry Release
+        uses: getsentry/action-release@v1.0.0
+        with:
+          environment: staging
+        env:
+          SENTRY_ORG: sentry
+          SENTRY_PROJECT: sentry-deploy-sync-hook
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
