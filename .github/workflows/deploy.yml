@@ -1,9 +1,6 @@
 name: Deploy
 env:
   PROJECT_ID: sentry-dev-tooling
-  # SERVICE: sentry-deploy-sync-hook-staging
-  # XXX: This needs to be determined based on the service
-  # ENVIRONMENT: staging
   REGION: us-central1
 
 on:
@@ -28,10 +25,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       
+      - name: Set service
+        id: info
+        # XXX: How to check that is one of these values? ['sentry-deploy-sync-hook-staging', 'sentry-deploy-sync-hook']
+        run: |-
+          echo "::set-output name=service::${{ github.event.inputs.service }} || sentry-deploy-sync-hook-staging"
+          # XXX: Change this
+          echo "::set-output name=environment::staging"
+      
       - name: Env variables
         run: |-
           env | sort
-          echo "- service ${{ github.event.inputs.service }}!"
           echo "- sha ${{ github.sha }}!"
           echo "- ref ${{ github.ref }}!"
 
@@ -54,14 +58,14 @@ jobs:
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v0.5.0
         with:
-          service: ${{ env.SERVICE }}
+          service: ${{ steps.info.outputs.service }}
           image: us.gcr.io/${{ env.PROJECT_ID }}/sentry-deploy-sync-hook:${{ github.sha }}
           region: ${{ env.REGION }}
 
       # - name: Sentry Release
       #   uses: getsentry/action-release@v1.1.5
       #   with:
-      #     environment: ${{ env.ENVIRONMENT }}
+      #     environment: ${{ steps.info.outputs.environment }}
       #   env:
       #     SENTRY_ORG: sentry
       #     SENTRY_PROJECT: sentry-deploy-sync-hook
