@@ -52,7 +52,7 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v0.5.0
         with:
           service: ${{ env.SERVICE }}
-          image: us.gcr.io/${{ PROJECT_ID }}/sentry-deploy-sync-hook:${{ github.sha }}
+          image: us.gcr.io/${{ env.PROJECT_ID }}/sentry-deploy-sync-hook:${{ github.sha }}
           region: ${{ env.REGION }}
       
       - name: Env variables
