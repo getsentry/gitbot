@@ -1,9 +1,17 @@
+import hashlib
+import hmac
+import json
 import os
 import requests
 
+# Staging
 # url = "https://sentry-deploy-sync-hook-dwunkkvj6a-uc.a.run.app"
+# Production
+# url = TBD
+# Development
 url = "http://0.0.0.0:5000"
-GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
+
+GITHUB_WEBHOOK_SECRET = os.environ["GITHUB_WEBHOOK_SECRET"]
 
 events = [
     (
@@ -16,12 +24,17 @@ events = [
             },
         },
         {
-            "X-Hub-Signature": GITHUB_WEBHOOK_SECRET,
             "X-GitHub-Event": "push",
+            "Content-Type": "application/json",
         },
     ),
 ]
 
 for body, header in events:
-    x = requests.post(url, headers=header, json=body)
+    new_body = json.dumps(body).encode("utf-8")
+    signature = hmac.new(
+        GITHUB_WEBHOOK_SECRET.encode("utf-8"), new_body, hashlib.sha1
+    ).hexdigest()
+    header["X-Hub-Signature"] = f"sha1={signature}"
+    x = requests.post(url, headers=header, data=new_body)
     print(x.text)

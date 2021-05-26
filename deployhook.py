@@ -205,15 +205,9 @@ def process_pull_request():
 def index():
     if os.environ.get("GITHUB_WEBHOOK_SECRET") or not IS_DEV:
         # Validate payload signature
-        print(os.environ.get("GITHUB_WEBHOOK_SECRET"))
-        print(request.data)
         signature = hmac.new(
             GITHUB_WEBHOOK_SECRET.encode("utf-8"), request.data, hashlib.sha1
         ).hexdigest()
-        print(signature)
-        print(str(request.headers.get("X-Hub-Signature", "").replace("sha1=", "")))
-        if not request.headers.get("X-Hub-Signature"):
-            return respond("There's no Github secret.")
         if not hmac.compare_digest(
             signature,
             str(request.headers.get("X-Hub-Signature", "").replace("sha1=", "")),

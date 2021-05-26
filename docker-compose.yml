@@ -12,6 +12,10 @@ services:
       # You need to create a personal access token with repo level access
       - DEPLOY_SYNC_USER
       - DEPLOY_SYNC_PAT
+      # This allows fetching Google Secrets when in conjunction with key from service accou
+      - GOOGLE_APPLICATION_CREDENTIALS
+      # This allows testing the code path where a GH secret is set as part of a webhook
+      - GITHUB_WEBHOOK_SECRET
       - DRY_RUN=${DRY_RUN:-True}
       - FLASK_APP=deployhook.py
       - FLASK_ENV=development
