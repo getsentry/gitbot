@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: Setup Cloud SDK
         uses: google-github-actions/setup-gcloud@v0.2.1
@@ -57,8 +59,10 @@ jobs:
       
       - name: Env variables
         run: |-
-          env
-          echo "- in ${{ github.event.inputs.service }}!"
+          env | sort
+          echo "- service ${{ github.event.inputs.service }}!"
+          echo "- sha ${{ github.sha }}!"
+          echo "- ref ${{ github.ref }}!"
 
       # - name: Sentry Release
       #   uses: getsentry/action-release@v1.1.5
