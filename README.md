@@ -25,7 +25,7 @@ If you want to make deployments to production or a PR follow the next steps.
 
 ### Deploy to production
 
-Once you're ready to deploy to production type: `./bin/deploy.sh production`
+Once you're ready to deploy to production, visit the [Deploy workflow](https://github.com/getsentry/sentry-deploy-sync-hook/actions/workflows/deploy.yml) and dispatch it with the value `production`.
 
 ### Deploy PR to staging
 
@@ -39,7 +39,12 @@ Test out a PR on staging:
 gcloud builds submit \
     --tag us.gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
     --project=sentry-dev-tooling
-./bin/deploy.sh staging
+gcloud run deploy sentry-dev-tooling-staging \
+    --image us.gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
+    --project=sentry-dev-tooling \
+    --platform managed \
+    --allow-unauthenticated \
+    --region=us-central1
 ```
 
 ### GCR configuration

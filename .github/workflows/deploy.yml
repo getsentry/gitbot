@@ -1,7 +1,6 @@
 name: Deploy
 env:
   PROJECT_ID: sentry-dev-tooling
-  REGION: us-central1
 
 on:
   push:
@@ -10,10 +9,10 @@ on:
   #   - master
   workflow_dispatch:
     inputs:
-      service:
-        description: 'GCR service to deploy to.'
+      environment:
+        description: 'Deploy to production or staging.'
         required: true
-        default: 'sentry-deploy-sync-hook-staging'
+        default: 'staging'
 
 jobs:
   build-deploy:
@@ -25,19 +24,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       
-      - name: Set service
+      - name: Where to deploy
         id: info
-        # XXX: How to check that is one of these values? ['sentry-deploy-sync-hook-staging', 'sentry-deploy-sync-hook']
         run: |-
-          echo "::set-output name=service::${{ github.event.inputs.service }} || sentry-deploy-sync-hook-staging"
-          # XXX: Change this
-          echo "::set-output name=environment::staging"
-      
-      - name: Env variables
-        run: |-
-          env | sort
-          echo "- sha ${{ github.sha }}!"
-          echo "- ref ${{ github.ref }}!"
+          if [ ${{ github.event.inputs.environment }} == 'production' ]; then
+            echo "::set-output name=service::sentry-deploy-sync-hook"
+            echo "::set-output name=environment::production"
+          else
+            echo "::set-output name=service::sentry-deploy-sync-hook-staging"
+            echo "::set-output name=environment::staging"
+          fi
 
       - name: Setup Cloud SDK
         uses: google-github-actions/setup-gcloud@v0.2.1
@@ -60,7 +56,7 @@ jobs:
         with:
           service: ${{ steps.info.outputs.service }}
           image: us.gcr.io/${{ env.PROJECT_ID }}/sentry-deploy-sync-hook:${{ github.sha }}
-          region: ${{ env.REGION }}
+          region: us-central1
 
       # - name: Sentry Release
       #   uses: getsentry/action-release@v1.1.5
