@@ -46,12 +46,16 @@ jobs:
           service: ${{ env.SERVICE }}
           image: us.gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{  github.sha }}
           region: ${{ env.REGION }}
+      
+      - name: Env variables
+        run: |-
+          env
 
-      - name: Sentry Release
-        uses: getsentry/action-release@v1.1.5
-        with:
-          environment: ${{ env.ENVIRONMENT }}
-        env:
-          SENTRY_ORG: sentry
-          SENTRY_PROJECT: sentry-deploy-sync-hook
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      # - name: Sentry Release
+      #   uses: getsentry/action-release@v1.1.5
+      #   with:
+      #     environment: ${{ env.ENVIRONMENT }}
+      #   env:
+      #     SENTRY_ORG: sentry
+      #     SENTRY_PROJECT: sentry-deploy-sync-hook
+      #     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
