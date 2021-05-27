@@ -4,14 +4,12 @@ env:
 
 on:
   push:
-    # branches:
-    #   - master
+    branches:
+      - master
     paths:
       - 'deployhook.py'
       - 'Dockerfile'
       - 'requirements.txt'
-      # XXX: For now
-      - '.github/workflows/deploy.yml'
 
   workflow_dispatch:
     inputs:
