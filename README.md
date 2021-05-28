@@ -23,29 +23,11 @@ If you want to make deployments to production or a PR follow the next steps.
 - Authenticate with `gcloud auth login`
 - Configure Docker to authenticate with GCloud `gcloud auth configure-docker`
 
-### Deploy to production
+### Deploy manually via workflow
 
 Once you're ready to deploy to production, visit the [Deploy workflow](https://github.com/getsentry/sentry-deploy-sync-hook/actions/workflows/deploy.yml) and dispatch it with the value `production`.
 
-### Deploy PR to staging
-
-Test out a PR on staging:
-
-- Checkout the PR's code
-- Build the image, upload it and deploy it with the steps below
-- See section "Testing changes" for how to test that it is working
-
-```shell
-gcloud builds submit \
-    --tag us.gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
-    --project=sentry-dev-tooling
-gcloud run deploy sentry-dev-tooling-staging \
-    --image us.gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook \
-    --project=sentry-dev-tooling \
-    --platform managed \
-    --allow-unauthenticated \
-    --region=us-central1
-```
+If you want to deploy a PR, you can follow the same process but choose the branch associated to that PR. It only allows to deploy to the staging service.
 
 ### GCR configuration
 
