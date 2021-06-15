@@ -152,7 +152,7 @@ curl \
 
 In order to test Github changes through your local set up you need to follow these steps:
 
-- Run `docker-compose up --build -e DRY_RUN=False`
+- `echo "DRY_RUN=False" >> .env` and run `docker-compose up`
   - Verify the output says dry run mode to be off and which repo it will push to
 - Set up [Ngrok](https://ngrok.io/) to redirect Github calls to your localhost
   - `ngrok http 5000` --> Grab the URL ngrok gives you (e.g. `https://6a88fe29c5cc.ngrok.io`)
