@@ -9,6 +9,7 @@ services:
       dockerfile: Dockerfile
     environment:
       - DEPLOY_REPO=${DEPLOY_REPO:-getsentry/getsentry-test-repo}
+      - SENTRY_REPO=${SENTRY_REPO:-getsentry/sentry-test-repo}
       # You need to create a personal access token with repo level access
       - DEPLOY_SYNC_USER
       - DEPLOY_SYNC_PAT
