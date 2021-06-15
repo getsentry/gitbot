@@ -52,6 +52,8 @@ DEPLOY_REPO = os.environ["DEPLOY_REPO"]
 DEPLOY_REPO_WITH_PAT = (
     f"https://{os.environ['DEPLOY_SYNC_USER']}:{PAT}@github.com/{DEPLOY_REPO}"
 )
+# XXX: Temp hard coding
+SENTRY_REPO_WITH_PAT = f"https://{os.environ['DEPLOY_SYNC_USER']}:{PAT}@github.com/getsentry/getsentry-test-repo"
 DEPLOY_BRANCH = "master"
 COMMITTER_NAME = "Sentry Bot"
 COMMITTER_EMAIL = "bot@getsentry.com"
@@ -64,6 +66,13 @@ if DRY_RUN:
 else:
     app.logger.info("Dry run mode: *OFF* <--!")
     app.logger.info(f"Code bumps will be pushed to {DEPLOY_BRANCH} on {DEPLOY_REPO}")
+
+
+def run(*args, **kwargs):
+    # XXX: The output of the clone command shows the PAT
+    print(*args)
+    kwargs.setdefault("timeout", 20)
+    return subprocess.run(*args, **kwargs)
 
 
 def respond(reason, updated=False):
@@ -220,6 +229,38 @@ def index():
         return process_push()
     elif event_type == "pull_request":
         return process_pull_request()
+    elif event_type == "revert":
+        return process_sentry_revert()
+    else:
+        return respond("Unsupported event type.")
+
+
+def process_sentry_revert():
+    data = request.get_json()
+    commit_to_revert = data["commit"]
+    tmp_dir = tempfile.mkdtemp()
+
+    reason = f"Failed to revert {commit_to_revert}"
+    print(" ".join(["git", "clone", "-v", SENTRY_REPO_WITH_PAT]))
+    foo = run(
+        ["git", "clone", "-v", SENTRY_REPO_WITH_PAT],
+        cwd=tmp_dir,
+    )
+    if foo.returncode == 0:
+        repo_checkout = f"{tmp_dir}/getsentry-test-repo"
+        run(["git", "revert", "-n", commit_to_revert], cwd=repo_checkout)
+        run(["git", "push"], cwd=repo_checkout)
+        return respond(reason=f"{commit_to_revert} reverted.", updated=True)
+
+    return respond(reason=reason, updated=False)
+
+
+@app.route("/eng-pipes", methods=["POST"])
+def engPipes():
+    event_type = request.headers.get("X-EngPipes-Event")
+
+    if event_type == "revert":
+        return process_sentry_revert()
     else:
         return respond("Unsupported event type.")
 

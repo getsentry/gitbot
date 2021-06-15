@@ -134,6 +134,17 @@ curl \
     http://0.0.0.0:5000
 ```
 
+To test the Git revert API you can type:
+
+```shell
+curl \
+    --header "Content-Type: application/json" \
+    --header 'X-EngPipes-Event: revert' \
+    --request POST \
+    --data '{"commit": "5dd3fb1eb267cdca5881c7cce68a061f21e37ba6", "name": "armenzg"}' \
+    http://0.0.0.0:5000/eng-pipes
+```
+
 ### Running the pipeline locally
 
 **NOTE**: The development set up will not commit code unless you set `DRY_RUN` env to False.
