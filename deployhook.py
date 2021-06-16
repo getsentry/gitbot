@@ -39,7 +39,7 @@ def run(*args, **kwargs):
 
 # This variable is only used during local development
 if not os.environ.get("FLASK_ENV"):
-    ENV = os.environ.get("ENV", "production")
+    ENV = os.environ["ENV"]
     print(f"Environment: {ENV}")
 
     sentry_sdk.init(
@@ -51,6 +51,11 @@ if not os.environ.get("FLASK_ENV"):
         traces_sample_rate=1.0,
         environment=ENV,
     )
+
+DEPLOY_BRANCH = "master"
+DEPLOY_MARKER = "#sync-getsentry"
+COMMITTER_NAME = "Sentry Bot"
+COMMITTER_EMAIL = "bot@getsentry.com"
 
 PAT = os.environ.get("DEPLOY_SYNC_PAT")
 # On GCR we use Google secrets to fetch the PAT
@@ -90,11 +95,6 @@ app.logger.addHandler(logging.StreamHandler())
 IS_DEV = app.env == "development"
 
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
-
-DEPLOY_BRANCH = "master"
-DEPLOY_MARKER = "#sync-getsentry"
-COMMITTER_NAME = "Sentry Bot"
-COMMITTER_EMAIL = "bot@getsentry.com"
 
 DRY_RUN = bool(util.strtobool(os.environ.get("DRY_RUN", "False")))
 if DRY_RUN:
