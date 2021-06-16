@@ -4,12 +4,20 @@ import logging
 import os
 import tempfile
 import subprocess
+import sys
 from distutils import util
 
 import sentry_sdk
 from google.cloud import secretmanager
 from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
+
+
+logger = logging.getLogger()
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(levelname)-8s %(message)s",
+)
 
 
 class CommandError(Exception):
@@ -19,15 +27,14 @@ class CommandError(Exception):
 def run(cmd, **kwargs):
     # XXX: The output of the clone/push commands shows the PAT
     # GCR does not scrub the PAT. Sentry does
-    # cmd = args[0].split(" ")
-    print(cmd)
+    logger.info(f"> {cmd}")
     # Redirect stderr to stdout
     execution = subprocess.run(
         cmd.split(), **kwargs, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
     for l in execution.stdout.splitlines():
-        print(l)
-    print(f"return code: {execution.returncode}")
+        logger.info(l)
+    logger.info(f"return code: {execution.returncode}")
     # If we raise an exception we will see it reported in Sentry and abort code execution
     if execution.returncode != 0:
         raise CommandError
@@ -36,7 +43,7 @@ def run(cmd, **kwargs):
 
 # ENV is defined for staging/production
 ENV = os.environ.get("FLASK_ENV") or os.environ["ENV"]
-print(f"Environment: {ENV}")
+logger.info(f"Environment: {ENV}")
 # This variable is only used during local development
 if ENV != "development":
     sentry_sdk.init(
@@ -82,12 +89,13 @@ SENTRY_REPO_WITH_PAT = (
     f"https://{os.environ['DEPLOY_SYNC_USER']}:{PAT}@github.com/{SENTRY_REPO}"
 )
 SENTRY_CHECKOUT = "/tmp/{}".format(SENTRY_REPO.split("/")[-1])
+logger.info("About to clone/pull")
 if not os.path.exists(SENTRY_CHECKOUT):
     # We clone before the app is running. We will be cloning from this checkout
     run(f"git clone {SENTRY_REPO_WITH_PAT} {SENTRY_CHECKOUT}")
 
 run("git clean -f", cwd=SENTRY_CHECKOUT)
-run("git pull", cwd=SENTRY_CHECKOUT)
+run("git pull origin master", cwd=SENTRY_CHECKOUT)
 
 
 app = Flask(__name__)
@@ -99,14 +107,14 @@ GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 
 DRY_RUN = bool(util.strtobool(os.environ.get("DRY_RUN", "False")))
 if DRY_RUN:
-    app.logger.info("Dry run mode: on")
+    logger.info("Dry run mode: on")
 else:
-    app.logger.info("Dry run mode: *OFF* <--!")
-    app.logger.info(f"Code bumps will be pushed to {DEPLOY_BRANCH} on {DEPLOY_REPO}")
+    logger.info("Dry run mode: *OFF* <--!")
+    logger.info(f"Code bumps will be pushed to {DEPLOY_BRANCH} on {DEPLOY_REPO}")
 
 
 def respond(reason, updated=False):
-    app.logger.info(reason)
+    logger.info(reason)
     return jsonify(updated=updated, reason=reason)
 
 
@@ -161,10 +169,10 @@ def process_push():
     )
 
     data = request.get_json()
-    app.logger.info(data)
+    logger.info(data)
 
     if data.get("ref") not in branches:
-        app.logger.info(f'{data.get("ref")} not in {branches}')
+        logger.info(f'{data.get("ref")} not in {branches}')
         return respond("Commit against untracked branch.")
 
     repo = data["repository"]["full_name"]
@@ -199,11 +207,11 @@ def process_push():
 def process_pull_request():
     """Handle "pull_request" events from PRs with the deploy marker set"""
     data = request.get_json()
-    app.logger.info(data)
+    logger.info(data)
 
     action = data.get("action")
     if action not in ["synchronize", "opened"]:
-        app.logger.info(f"Action: '{action}' not in 'synchronize' or 'opened'")
+        logger.info(f"Action: '{action}' not in 'synchronize' or 'opened'")
         return respond("Invalid action for pull_request event.")
 
     # Check that the PR is from the same repo
@@ -267,7 +275,7 @@ def process_git_revert():
     data = request.get_json()
     commit_to_revert = data["commit"]
     name = data["name"]
-    print(f"{name} has requested to revert {commit_to_revert}")
+    logger.info(f"{name} has requested to revert {commit_to_revert}")
 
     tmp_dir = tempfile.mkdtemp()
     try:
@@ -291,7 +299,7 @@ def process_git_revert():
         return respond(reason=f"{commit_to_revert} reverted.", updated=True)
     except CommandError as e:
         sentry_sdk.capture_exception(e)
-        print(e)
+        logger.info(e)
         return respond(reason=f"Failed to revert {commit_to_revert}", updated=False)
 
 
