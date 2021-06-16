@@ -11,11 +11,6 @@ from google.cloud import secretmanager
 from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-# These are read by the git command
-os.environ["GIT_AUTHOR_NAME"] = "getsentry-bot"
-os.environ["GIT_COMMITTER_NAME"] = "getsentry-bot"
-os.environ["EMAIL"] = "bot@sentry.io"
-
 
 class CommandError(Exception):
     pass
@@ -38,9 +33,8 @@ def run(*args, **kwargs):
     return execution
 
 
-print(os.environ.get("FLASK_ENV"))
 # ENV is defined for staging/production
-ENV = os.environ.get("FLASK_ENV", os.environ["ENV"])
+ENV = os.environ.get("FLASK_ENV") or os.environ["ENV"]
 # This variable is only used during local development
 if not ENV == "development":
     print(f"Environment: {ENV}")
@@ -283,14 +277,18 @@ def process_git_revert():
         run(["git", "clone", SENTRY_CHECKOUT, tmp_dir])
         # The local checkout falls out of date, thus, we need to pull new changes
         run(["git", "pull"], cwd=tmp_dir)
-        run(["git", "revert", "--no-edit", commit_to_revert], cwd=tmp_dir)
+        # For now, we're making this local but eventually we should use this globally
+        env = {
+            "GIT_AUTHOR_NAME": "getsentry-bot",
+            "EMAIL": "bot@sentry.io",
+        }
+        run(["git", "revert", "--no-edit", commit_to_revert], cwd=tmp_dir, env=env)
 
         # Since we cloned from a local checkout we need to make sure to push to the remote repo
         push_args = ["git", "push", SENTRY_REPO_WITH_PAT]
         if DRY_RUN:
             push_args.append("--dry-run")
-        # run(["git", "show", "-q"], cwd=tmp_dir)
-        run(push_args, cwd=tmp_dir)
+        run(push_args, cwd=tmp_dir, env=env)
         return respond(reason=f"{commit_to_revert} reverted.", updated=True)
     except CommandError as e:
         sentry_sdk.capture_exception(e)
