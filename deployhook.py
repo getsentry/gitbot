@@ -16,13 +16,14 @@ class CommandError(Exception):
     pass
 
 
-def run(*args, **kwargs):
+def run(cmd, **kwargs):
     # XXX: The output of the clone/push commands shows the PAT
     # GCR does not scrub the PAT. Sentry does
-    print(" ".join(*args))
+    # cmd = args[0].split(" ")
+    print(cmd)
     # Redirect stderr to stdout
     execution = subprocess.run(
-        *args, **kwargs, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        cmd.split(), **kwargs, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
     for l in execution.stdout.splitlines():
         print(l)
@@ -35,10 +36,9 @@ def run(*args, **kwargs):
 
 # ENV is defined for staging/production
 ENV = os.environ.get("FLASK_ENV") or os.environ["ENV"]
+print(f"Environment: {ENV}")
 # This variable is only used during local development
-if not ENV == "development":
-    print(f"Environment: {ENV}")
-
+if ENV != "development":
     sentry_sdk.init(
         dsn="https://95cc5cfe034b4ff8b68162078978935c@o1.ingest.sentry.io/5748916",
         integrations=[FlaskIntegration()],
@@ -66,24 +66,28 @@ if not PAT:
         name="projects/sentry-dev-tooling/secrets/DeploySyncPat/versions/2"
     )
     PAT = response.payload.data.decode("UTF-8")
-# This forces the production apps to explicitely have to set where to push
+
 DEPLOY_REPO = os.environ["DEPLOY_REPO"]
+SENTRY_REPO = os.environ.get("SENTRY_REPO", "getsentry/sentry")
+
+# Make sure that development/staging will not push to the real repos
+if ENV != "production":
+    assert SENTRY_REPO != "getsentry/sentry"
+    assert DEPLOY_REPO != "getsentry/getsentry"
+
 DEPLOY_REPO_WITH_PAT = (
     f"https://{os.environ['DEPLOY_SYNC_USER']}:{PAT}@github.com/{DEPLOY_REPO}"
 )
-SENTRY_REPO = os.environ.get("SENTRY_REPO", "getsentry/sentry")
 SENTRY_REPO_WITH_PAT = (
     f"https://{os.environ['DEPLOY_SYNC_USER']}:{PAT}@github.com/{SENTRY_REPO}"
 )
 SENTRY_CHECKOUT = "/tmp/{}".format(SENTRY_REPO.split("/")[-1])
 if not os.path.exists(SENTRY_CHECKOUT):
-    # XXX: If this fails we will be in a bad state. Put effort into recovery or other method
-    # to pump the checkout
     # We clone before the app is running. We will be cloning from this checkout
-    run(["git", "clone", SENTRY_REPO_WITH_PAT, SENTRY_CHECKOUT])
-else:
-    run(["git", "clean", "-f"], cwd=SENTRY_CHECKOUT)
-    run(["git", "pull"], cwd=SENTRY_CHECKOUT)
+    run(f"git clone {SENTRY_REPO_WITH_PAT} {SENTRY_CHECKOUT}")
+
+run("git clean -f", cwd=SENTRY_CHECKOUT)
+run("git pull", cwd=SENTRY_CHECKOUT)
 
 
 app = Flask(__name__)
@@ -99,11 +103,6 @@ if DRY_RUN:
 else:
     app.logger.info("Dry run mode: *OFF* <--!")
     app.logger.info(f"Code bumps will be pushed to {DEPLOY_BRANCH} on {DEPLOY_REPO}")
-
-# Make sure that doing development/staging will not push to the real repos
-if ENV != "production":
-    assert SENTRY_REPO != "getsentry/sentry"
-    assert DEPLOY_REPO != "getsentry/getsentry"
 
 
 def respond(reason, updated=False):
@@ -274,20 +273,20 @@ def process_git_revert():
     try:
         # We clone from a local checkout to speed up the first cloning and since we have threading
         # we should not be touching the first checkout unless we can guarantee thread safety
-        run(["git", "clone", SENTRY_CHECKOUT, tmp_dir])
+        run(f"git clone {SENTRY_CHECKOUT} {tmp_dir}")
         # The local checkout falls out of date, thus, we need to pull new changes
-        run(["git", "pull"], cwd=tmp_dir)
+        run("git pull", cwd=tmp_dir)
         # For now, we're making this local but eventually we should use this globally
         env = {
             "GIT_AUTHOR_NAME": "getsentry-bot",
             "EMAIL": "bot@sentry.io",
         }
-        run(["git", "revert", "--no-edit", commit_to_revert], cwd=tmp_dir, env=env)
+        run(f"git revert --no-edit {commit_to_revert}", cwd=tmp_dir, env=env)
 
         # Since we cloned from a local checkout we need to make sure to push to the remote repo
-        push_args = ["git", "push", SENTRY_REPO_WITH_PAT]
+        push_args = f"git push {SENTRY_REPO_WITH_PAT}"
         if DRY_RUN:
-            push_args.append("--dry-run")
+            push_args += "--dry-run"
         run(push_args, cwd=tmp_dir, env=env)
         return respond(reason=f"{commit_to_revert} reverted.", updated=True)
     except CommandError as e:
