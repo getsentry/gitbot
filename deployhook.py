@@ -11,6 +11,7 @@ from google.cloud import secretmanager
 from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
 
+# These are read by the git command
 os.environ["GIT_AUTHOR_NAME"] = "getsentry-bot"
 os.environ["GIT_COMMITTER_NAME"] = "getsentry-bot"
 os.environ["EMAIL"] = "bot@sentry.io"
@@ -37,9 +38,11 @@ def run(*args, **kwargs):
     return execution
 
 
+print(os.environ.get("FLASK_ENV"))
+# ENV is defined for staging/production
+ENV = os.environ.get("FLASK_ENV", os.environ["ENV"])
 # This variable is only used during local development
-if not os.environ.get("FLASK_ENV"):
-    ENV = os.environ["ENV"]
+if not ENV == "development":
     print(f"Environment: {ENV}")
 
     sentry_sdk.init(
