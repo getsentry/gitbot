@@ -11,19 +11,36 @@ from google.cloud import secretmanager
 from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
 
+os.environ["GIT_AUTHOR_NAME"] = "getsentry-bot"
+os.environ["GIT_COMMITTER_NAME"] = "getsentry-bot"
+os.environ["EMAIL"] = "bot@sentry.io"
+
 
 class CommandError(Exception):
     pass
 
 
-app = Flask(__name__)
-app.logger.addHandler(logging.StreamHandler())
+def run(*args, **kwargs):
+    # XXX: The output of the clone/push commands shows the PAT
+    # GCR does not scrub the PAT. Sentry does
+    print(" ".join(*args))
+    # Redirect stderr to stdout
+    execution = subprocess.run(
+        *args, **kwargs, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
+    for l in execution.stdout.splitlines():
+        print(l)
+    print(f"return code: {execution.returncode}")
+    # If we raise an exception we will see it reported in Sentry and abort code execution
+    if execution.returncode != 0:
+        raise CommandError
+    return execution
 
-IS_DEV = app.env == "development"
 
-if not IS_DEV:
+# This variable is only used during local development
+if not os.environ.get("FLASK_ENV"):
     ENV = os.environ.get("ENV", "production")
-    app.logger.info(f"Environment: {ENV}")
+    print(f"Environment: {ENV}")
 
     sentry_sdk.init(
         dsn="https://95cc5cfe034b4ff8b68162078978935c@o1.ingest.sentry.io/5748916",
@@ -34,9 +51,6 @@ if not IS_DEV:
         traces_sample_rate=1.0,
         environment=ENV,
     )
-
-GETSENTRY_OWNER = "getsentry"
-DEPLOY_MARKER = "#sync-getsentry"
 
 PAT = os.environ.get("DEPLOY_SYNC_PAT")
 # On GCR we use Google secrets to fetch the PAT
@@ -55,15 +69,32 @@ DEPLOY_REPO = os.environ["DEPLOY_REPO"]
 DEPLOY_REPO_WITH_PAT = (
     f"https://{os.environ['DEPLOY_SYNC_USER']}:{PAT}@github.com/{DEPLOY_REPO}"
 )
-SENTRY_REPO = os.environ.get("SENTRY_REPO", f"{GETSENTRY_OWNER}/sentry")
+SENTRY_REPO = os.environ.get("SENTRY_REPO", "getsentry/sentry")
 SENTRY_REPO_WITH_PAT = (
     f"https://{os.environ['DEPLOY_SYNC_USER']}:{PAT}@github.com/{SENTRY_REPO}"
 )
-DEPLOY_BRANCH = "master"
-COMMITTER_NAME = "Sentry Bot"
-COMMITTER_EMAIL = "bot@getsentry.com"
+SENTRY_CHECKOUT = "/tmp/{}".format(SENTRY_REPO.split("/")[-1])
+if not os.path.exists(SENTRY_CHECKOUT):
+    # XXX: If this fails we will be in a bad state. Put effort into recovery or other method
+    # to pump the checkout
+    # We clone before the app is running. We will be cloning from this checkout
+    run(["git", "clone", SENTRY_REPO_WITH_PAT, SENTRY_CHECKOUT])
+else:
+    run(["git", "clean", "-f"], cwd=SENTRY_CHECKOUT)
+    run(["git", "pull"], cwd=SENTRY_CHECKOUT)
+
+
+app = Flask(__name__)
+app.logger.addHandler(logging.StreamHandler())
+
+IS_DEV = app.env == "development"
 
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
+
+DEPLOY_BRANCH = "master"
+DEPLOY_MARKER = "#sync-getsentry"
+COMMITTER_NAME = "Sentry Bot"
+COMMITTER_EMAIL = "bot@getsentry.com"
 
 DRY_RUN = bool(util.strtobool(os.environ.get("DRY_RUN", "False")))
 if DRY_RUN:
@@ -72,29 +103,10 @@ else:
     app.logger.info("Dry run mode: *OFF* <--!")
     app.logger.info(f"Code bumps will be pushed to {DEPLOY_BRANCH} on {DEPLOY_REPO}")
 
-# Make sure that doing development will not push to the real repos
-if IS_DEV:
+# Make sure that doing development/staging will not push to the real repos
+if ENV != "production":
     assert SENTRY_REPO != "getsentry/sentry"
     assert DEPLOY_REPO != "getsentry/getsentry"
-
-
-def run(*args, **kwargs):
-    # XXX: The output of the clone/push commands shows the PAT
-    # GCR does not scrub the PAT. Sentry does
-    print(" ".join(*args))
-    # XXX: Git cloning is very slow on my local machine
-    # For prototyping we can get by without a timeout but we will need to improve the git cloning
-    # kwargs.setdefault("timeout", 30)
-    # Redirect stderr to stdout
-    execution = subprocess.run(
-        *args, **kwargs, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-    )
-    for l in execution.stdout.splitlines():
-        print(l)
-    # If we raise an exception we will see it reported in Sentry and abort code execution
-    if execution.returncode != 0:
-        raise CommandError
-    return execution
 
 
 def respond(reason, updated=False):
@@ -263,17 +275,19 @@ def process_git_revert():
 
     tmp_dir = tempfile.mkdtemp()
     try:
-        run(["git", "clone", SENTRY_REPO_WITH_PAT], cwd=tmp_dir)
-        # Should we use the repo from the request?
-        path = SENTRY_REPO.split("/")[-1]
-        repo_checkout = f"{tmp_dir}/{path}"
-        run(["git", "revert", "-n", commit_to_revert], cwd=repo_checkout)
+        # We clone from a local checkout to speed up the first cloning and since we have threading
+        # we should not be touching the first checkout unless we can guarantee thread safety
+        run(["git", "clone", SENTRY_CHECKOUT, tmp_dir])
+        # The local checkout falls out of date, thus, we need to pull new changes
+        run(["git", "pull"], cwd=tmp_dir)
+        run(["git", "revert", "--no-edit", commit_to_revert], cwd=tmp_dir)
 
-        push_args = ["git", "push"]
+        # Since we cloned from a local checkout we need to make sure to push to the remote repo
+        push_args = ["git", "push", SENTRY_REPO_WITH_PAT]
         if DRY_RUN:
             push_args.append("--dry-run")
-        run(["git", "show", "--oneline"], cwd=repo_checkout)
-        run(push_args, cwd=repo_checkout)
+        # run(["git", "show", "-q"], cwd=tmp_dir)
+        run(push_args, cwd=tmp_dir)
         return respond(reason=f"{commit_to_revert} reverted.", updated=True)
     except CommandError as e:
         sentry_sdk.capture_exception(e)
