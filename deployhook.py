@@ -81,8 +81,7 @@ if IS_DEV:
 def run(*args, **kwargs):
     # XXX: The output of the clone/push commands shows the PAT
     # GCR does not scrub the PAT. Sentry does
-    print(*args)
-    print(kwargs["cwd"])
+    print(" ".join(*args))
     # XXX: Git cloning is very slow on my local machine
     # For prototyping we can get by without a timeout but we will need to improve the git cloning
     # kwargs.setdefault("timeout", 30)
@@ -273,6 +272,7 @@ def process_git_revert():
         push_args = ["git", "push"]
         if DRY_RUN:
             push_args.append("--dry-run")
+        run(["git", "show", "--oneline"], cwd=repo_checkout)
         run(push_args, cwd=repo_checkout)
         return respond(reason=f"{commit_to_revert} reverted.", updated=True)
     except CommandError as e:
