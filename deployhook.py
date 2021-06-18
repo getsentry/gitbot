@@ -203,7 +203,7 @@ def process_pull_request():
 
 @app.route("/", methods=["POST"])
 def index():
-    if os.environ.get("GITHUB_WEBHOOK_SECRET") or not IS_DEV:
+    if os.environ.get("GITHUB_WEBHOOK_SECRET"):
         # Validate payload signature
         signature = hmac.new(
             GITHUB_WEBHOOK_SECRET.encode("utf-8"), request.data, hashlib.sha1

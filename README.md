@@ -73,9 +73,9 @@ Testing that it can fetch Google Secrets:
 Check if the production set up starts up (GCR logs can sometimes fail to show the issue):
 
 ```shell
-docker build -t sentry-deploy-sync-hook:latest . && \
-docker run --env-file gcr.env -p 8080:8080 -v `pwd`:/app \
-  --rm -ti sentry-deploy-sync-hook
+docker run \
+  -e GOOGLE_APPLICATION_CREDENTIALS=gcr-key.json \
+  -v `pwd`:/app --rm -ti sentry-deploy-sync-hook
 ```
 
 ## Rotate secret
