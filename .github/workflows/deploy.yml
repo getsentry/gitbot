@@ -1,16 +1,22 @@
 name: Deploy
 env:
   PROJECT_ID: sentry-dev-tooling
-  # XXX: On the next pass, add support for triggering the workflow manually for a production deployment
-  # OR a staging deployment. Switch back to automatically deploying staging
-  # Currently only supporting production
-  SERVICE: sentry-deploy-sync-hook
-  REGION: us-central1
 
 on:
   push:
     branches:
       - master
+    paths:
+      - 'deployhook.py'
+      - 'Dockerfile'
+      - 'requirements.txt'
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deploy to production or staging.'
+        required: true
+        default: 'staging'
 
 jobs:
   build-deploy:
@@ -21,6 +27,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      
+      - name: Where to deploy
+        id: info
+        run: |-
+          if [ ${{ github.event.inputs.environment }} == 'production' ]; then
+            echo "::set-output name=service::sentry-deploy-sync-hook"
+            echo "::set-output name=environment::${{ github.event.inputs.environment }}"
+            if [ ${{ github.ref }} != "refs/heads/master" ]; then
+              >&2 echo "We only allow deployments to production from the master branch."
+              exit 1
+            fi
+          else
+            echo "::set-output name=service::sentry-deploy-sync-hook-staging"
+            echo "::set-output name=environment::staging"
+          fi
 
       - name: Setup Cloud SDK
         uses: google-github-actions/setup-gcloud@v0.2.1
@@ -35,20 +56,22 @@ jobs:
 
       - name: Build and Push Container
         run: |-
-          docker build -t us.gcr.io/$PROJECT_ID/$SERVICE:$GITHUB_SHA .
-          docker push us.gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
+          docker build -t us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA .
+          docker push us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v0.5.0
         with:
-          service: ${{ env.SERVICE }}
-          image: us.gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{  github.sha }}
-          region: ${{ env.REGION }}
+          service: ${{ steps.info.outputs.service }}
+          image: us.gcr.io/${{ env.PROJECT_ID }}/sentry-deploy-sync-hook:${{ github.sha }}
+          region: us-central1
 
       - name: Sentry Release
-        uses: getsentry/action-release@v1.0.0
+        uses: getsentry/action-release@v1.1.5
+        # We only report new releases if deployed from master
+        if: ${{ github.ref == 'refs/heads/master' }}
         with:
-          environment: staging
+          environment: ${{ steps.info.outputs.environment }}
         env:
           SENTRY_ORG: sentry
           SENTRY_PROJECT: sentry-deploy-sync-hook
