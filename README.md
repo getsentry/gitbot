@@ -14,32 +14,9 @@ Staging deployment: `https://sentry-deploy-sync-hook-staging-dwunkkvj6a-uc.a.run
 
 The CI uploads the Docker image and deploys it once changes are merged on `master`.
 
-If you want to make deployments to production or a PR follow the next steps.
+If you want to make deployments to production, visit the [Deploy workflow](https://github.com/getsentry/sentry-deploy-sync-hook/actions/workflows/deploy.yml) and dispatch it with the value `production`.
 
-### Configure Google Cloud locally
-
-- [Install gcloud](https://cloud.google.com/sdk/docs/install)
-- Install the Docker GCR extension with `gcloud components install docker-credential-gcr`
-- Authenticate with `gcloud auth login`
-- Configure Docker to authenticate with GCloud `gcloud auth configure-docker`
-
-### Deploy manually via workflow
-
-Once you're ready to deploy to production, visit the [Deploy workflow](https://github.com/getsentry/sentry-deploy-sync-hook/actions/workflows/deploy.yml) and dispatch it with the value `production`.
-
-If you want to deploy a PR, you can follow the same process but choose the branch associated to that PR. It only allows to deploy to the staging service.
-
-### GCR configuration
-
-The GCR instances have these environments defined:
-
-- DEPLOY_REPO:
-  - `getsentry/getsentry` for production
-  - `getsentry/getsentry-test-repo` for staging
-- ENV: staging or production
-- Images deployed from `gcr.io/sentry-dev-tooling/sentry-deploy-sync-hook`
-
-The GCR instances can fetch the authentication token and Github webhook secret from Google Secrets without any env variables since they have a service account associated to the service.
+If you want to deploy a PR, you can follow the same process but choose the branch associated to that PR. It only allows to deploy to the staging service (to prevent mistakes).
 
 ## Repositories set up and testing
 
@@ -69,6 +46,8 @@ Testing that it can fetch Google Secrets:
 - Download a key associated to the GC staging service account
   - Place the file in your source checkout as `gcr-key.json` (it needs to be within the mount)
 - Run `docker-compose run -e GOOGLE_APPLICATION_CREDENTIALS="gcr-key.json" backend`
+
+**NOTE**: The GCR instance does not need to define the authentication token since it fetches it from Google Secrets. It also does not need to define the GOOGLE_APPLICATION_CREDENTIALS env variable since it has a service account associated to the service.
 
 Check if the production set up starts up (GCR logs can sometimes fail to show the issue):
 
@@ -106,10 +85,21 @@ echo DEPLOY_SYNC_USER=<your_github_user> >> .env
 
 **NOTE**: It is super important you understand that this token will be able to commit anywhere the associated Github user can. It is encouraged you delete this token from Github (or disk) as soon as you're done doing development.
 
-We use docker compose to help with live code reloading (since we mount a volume to the source checkout):
+You can use docker compose to help with live code reloading (since we mount a volume to have access to the latest deployhook.py):
 
 ```shell
 docker-compose up --build
+```
+
+You can also use a virtualenv and execute flask in development mode:
+
+```shell
+python3 -m venv venv
+source venv/bin/activate
+pip install wheel
+pip install -r requirements.txt
+# There are certain variables from env.development that get loaded via direnv
+flask run
 ```
 
 To test the push API you can use `curl`:
