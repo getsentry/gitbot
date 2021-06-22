@@ -4,21 +4,26 @@ import logging
 import os
 import tempfile
 import subprocess
-from distutils import util
 
 import sentry_sdk
-from google.cloud import secretmanager
+
 from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-app = Flask(__name__)
-app.logger.addHandler(logging.StreamHandler())
+from config import *
 
-IS_DEV = app.env == "development"
+logging.basicConfig(
+    level=os.environ.get("LOGGING_LEVEL", logging.INFO),
+    # GCR logs already include the time
+    format="%(asctime)s %(levelname)-8s %(message)s"
+    if ENV == "development"
+    else "%(levelname)-8s %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger()
 
-if not IS_DEV:
-    ENV = os.environ.get("ENV", "production")
-    app.logger.info(f"Environment: {ENV}")
+if ENV != "development":
+    logger.info(f"Environment: {ENV}")
 
     sentry_sdk.init(
         dsn="https://95cc5cfe034b4ff8b68162078978935c@o1.ingest.sentry.io/5748916",
@@ -30,44 +35,20 @@ if not IS_DEV:
         environment=ENV,
     )
 
-GETSENTRY_OWNER = "getsentry"
-SENTRY_REPO = "{}/sentry".format(GETSENTRY_OWNER)
-
-DEPLOY_MARKER = "#sync-getsentry"
-
-PAT = os.environ.get("DEPLOY_SYNC_PAT")
-# On GCR we use Google secrets to fetch the PAT
-if not PAT:
-    # If you're inside of GCR you don't need to set any env variables
-    # If you want to test locally you will have to set GOOGLE_APPLICATION_CREDENTIALS to the path of the GCR key
-    # Create the Secret Manager client.
-    client = secretmanager.SecretManagerServiceClient()
-    # GCP project in which to store secrets in Secret Manager.
-    response = client.access_secret_version(
-        name="projects/sentry-dev-tooling/secrets/DeploySyncPat/versions/2"
-    )
-    PAT = response.payload.data.decode("UTF-8")
-# This forces the production apps to explicitely have to set where to push
-DEPLOY_REPO = os.environ["DEPLOY_REPO"]
-DEPLOY_REPO_WITH_PAT = (
-    f"https://{os.environ['DEPLOY_SYNC_USER']}:{PAT}@github.com/{DEPLOY_REPO}"
-)
-DEPLOY_BRANCH = "master"
-COMMITTER_NAME = "Sentry Bot"
-COMMITTER_EMAIL = "bot@getsentry.com"
-
-GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
-
-DRY_RUN = bool(util.strtobool(os.environ.get("DRY_RUN", "False")))
 if DRY_RUN:
-    app.logger.info("Dry run mode: on")
+    logger.info("Dry run mode: on")
 else:
-    app.logger.info("Dry run mode: *OFF* <--!")
-    app.logger.info(f"Code bumps will be pushed to {DEPLOY_BRANCH} on {DEPLOY_REPO}")
+    logger.info("Dry run mode: *OFF* <--!")
+    logger.info(f"Code bumps will be pushed to {GETSENTRY_BRANCH} on {GETSENTRY_REPO}")
+
+if ENV != "development" and not GITHUB_WEBHOOK_SECRET:
+    raise SystemError("Empty GITHUB_WEBHOOK_SECRET!")
+
+app = Flask(__name__)
 
 
 def respond(reason, updated=False):
-    app.logger.info(reason)
+    logger.info(reason)
     return jsonify(updated=updated, reason=reason)
 
 
@@ -88,13 +69,13 @@ def bump_version(branch, script, *args):
             "1",
             "-b",
             branch,
-            DEPLOY_REPO_WITH_PAT,
+            GETSENTRY_REPO_WITH_PAT,
             repo_root,
             cwd=None,
         )
         != 0
     ):
-        return False, "Cannot clone branch {} from {}.".format(branch, DEPLOY_REPO)
+        return False, "Cannot clone branch {} from {}.".format(branch, GETSENTRY_REPO)
 
     cmd("git", "config", "user.name", COMMITTER_NAME)
     cmd("git", "config", "user.email", COMMITTER_EMAIL)
@@ -122,10 +103,10 @@ def process_push():
     )
 
     data = request.get_json()
-    app.logger.info(data)
+    logger.info(data)
 
     if data.get("ref") not in branches:
-        app.logger.info(f'{data.get("ref")} not in {branches}')
+        logger.info(f'{data.get("ref")} not in {branches}')
         return respond("Commit against untracked branch.")
 
     repo = data["repository"]["full_name"]
@@ -150,7 +131,7 @@ def process_push():
 
         # Support Sentry fork when running on development mode
         if (IS_DEV and repo.split("/")[1] == "sentry") or (repo == SENTRY_REPO):
-            updated, reason = bump_version(DEPLOY_BRANCH, "bin/bump-sentry", *args)
+            updated, reason = bump_version(GETSENTRY_BRANCH, "bin/bump-sentry", *args)
         else:
             reason = "Unknown repository"
 
@@ -160,11 +141,11 @@ def process_push():
 def process_pull_request():
     """Handle "pull_request" events from PRs with the deploy marker set"""
     data = request.get_json()
-    app.logger.info(data)
+    logger.info(data)
 
     action = data.get("action")
     if action not in ["synchronize", "opened"]:
-        app.logger.info(f"Action: '{action}' not in 'synchronize' or 'opened'")
+        logger.info(f"Action: '{action}' not in 'synchronize' or 'opened'")
         return respond("Invalid action for pull_request event.")
 
     # Check that the PR is from the same repo
@@ -187,7 +168,7 @@ def process_pull_request():
             return respond("Pull request is already merged.")
 
     body = pull_request["body"] or ""
-    if body.find(DEPLOY_MARKER) == -1:
+    if body.find(SYNC_MARKER) == -1:
         return respond("Deploy marker not found.")
 
     ref_sha = head["sha"]
@@ -203,7 +184,7 @@ def process_pull_request():
 
 @app.route("/", methods=["POST"])
 def index():
-    if not IS_DEV:
+    if GITHUB_WEBHOOK_SECRET:
         # Validate payload signature
         signature = hmac.new(
             GITHUB_WEBHOOK_SECRET.encode("utf-8"), request.data, hashlib.sha1
@@ -222,7 +203,3 @@ def index():
         return process_pull_request()
     else:
         return respond("Unsupported event type.")
-
-
-if not IS_DEV and not GITHUB_WEBHOOK_SECRET:
-    raise SystemError("Empty GITHUB_WEBHOOK_SECRET!")
