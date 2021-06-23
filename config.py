@@ -40,7 +40,7 @@ if not PAT and not os.environ.get("FAST_STARTUP"):
     PAT = client.access_secret_version(
         name="projects/sentry-dev-tooling/secrets/GitbotPat/versions/1"
     ).payload.data.decode("UTF-8")
-    version = 1 if ENV != "production" else 2
+    version = 3 if ENV != "production" else 2
     GITHUB_WEBHOOK_SECRET = client.access_secret_version(
         name=f"projects/sentry-dev-tooling/secrets/GitbotGithubSecret/versions/{version}"
     ).payload.data.decode("UTF-8")
