@@ -1,10 +1,6 @@
 # Git Bot Service
 
-<<<<<<< HEAD
-This service allows reverting Git changes in Sentry/Getsentry and updates the reference in getsentry to sentry automatically. There's two ways that the former happens:
-=======
 This service allows reverting Git changes in Sentry/Getsentry and updates the reference in getsentry to sentry automatically. There's two ways that the latter happens:
->>>>>>> master
 
 If a push happens on Sentry's master, this will clone getsentry and call `bin/bump-sentry` in order to update
 the Sentry's sha on getsentry.
@@ -58,7 +54,7 @@ Check if the production set up starts up (GCR logs can sometimes fail to show th
 ```shell
 docker run \
   -e GOOGLE_APPLICATION_CREDENTIALS=gcr-key.json \
-  -v `pwd`:/app --rm -ti sentry-deploy-sync-hook
+  -v `pwd`:/app --rm -ti gitbot
 ```
 
 ## Rotate secret

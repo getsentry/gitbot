@@ -7,16 +7,18 @@ on:
     branches:
       - master
     paths:
-      - 'deployhook.py'
-      - 'Dockerfile'
-      - 'requirements.txt'
+      - "config.py"
+      - "deployhook.py"
+      - "lib.py"
+      - "Dockerfile"
+      - "requirements.txt"
 
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Deploy to production or staging.'
+        description: "Deploy to production or staging."
         required: true
-        default: 'staging'
+        default: "staging"
 
 jobs:
   build-deploy:
@@ -27,7 +29,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      
+
       - name: Where to deploy
         id: info
         run: |-
@@ -48,7 +50,7 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
           service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-          export_default_credentials: true  # Set to true to authenticate the Cloud Run action
+          export_default_credentials: true # Set to true to authenticate the Cloud Run action
 
       # This gives the ability to push to the Google Registry
       - name: Authorize Docker push
