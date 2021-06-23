@@ -11,6 +11,11 @@ def repo_url_with_pat(repo):
 
 COMMITTER_NAME = "Sentry Bot"
 COMMITTER_EMAIL = "bot@getsentry.com"
+# For now, we're making this to be used in specific steps, however, we will make it global in the future
+COMMITER_ENV = {
+    "GIT_AUTHOR_NAME": "getsentry-bot",
+    "EMAIL": "bot@sentry.io",
+}
 # Used in Github Sentry PRs to sync a getsentry branch
 GITBOT_MARKER = "#sync-getsentry"
 
@@ -24,6 +29,7 @@ IS_DEV = ENV == "development"
 # Secrets
 PAT = os.environ.get("GITBOT_PAT")
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
+GITBOT_API_SECRET = os.environ.get("GITBOT_API_SECRET")
 # On GCR we use Google secrets to fetch the PAT
 if not PAT:
     # If you're inside of GCR you don't need to set any env variables
@@ -38,6 +44,9 @@ if not PAT:
     GITHUB_WEBHOOK_SECRET = client.access_secret_version(
         name=f"projects/sentry-dev-tooling/secrets/GitbotGithubSecret/versions/{version}"
     ).payload.data.decode("UTF-8")
+    GITBOT_API_SECRET = client.access_secret_version(
+        name="projects/sentry-dev-tooling/secrets/GitbotSecret/versions/1"
+    ).payload.data.decode("UTF-8")
 
 
 # Repo related constants
@@ -45,4 +54,6 @@ GETSENTRY_BRANCH = "master"
 GETSENTRY_CHECKOUT_PATH = "/tmp/getsentry"
 GETSENTRY_REPO = os.environ.get("GETSENTRY_REPO", "getsentry/getsentry-test-repo")
 GETSENTRY_REPO_WITH_PAT = repo_url_with_pat(GETSENTRY_REPO)
-SENTRY_REPO = os.environ.get("SENTRY_REPO", "sentry/getsentry-test-repo")
+SENTRY_CHECKOUT_PATH = "/tmp/sentry"
+SENTRY_REPO = os.environ.get("SENTRY_REPO", "getsentry/sentry-test-repo")
+SENTRY_REPO_WITH_PAT = repo_url_with_pat(SENTRY_REPO)

@@ -1,6 +1,10 @@
 # Git Bot Service
 
+<<<<<<< HEAD
+This service allows reverting Git changes in Sentry/Getsentry and updates the reference in getsentry to sentry automatically. There's two ways that the former happens:
+=======
 This service allows reverting Git changes in Sentry/Getsentry and updates the reference in getsentry to sentry automatically. There's two ways that the latter happens:
+>>>>>>> master
 
 If a push happens on Sentry's master, this will clone getsentry and call `bin/bump-sentry` in order to update
 the Sentry's sha on getsentry.
@@ -102,27 +106,13 @@ pip install -r requirements.txt
 flask run
 ```
 
-To test the push API you can use `curl`:
+To test the different APIs use the `test_ingestion.py` script:
 
 ```shell
-curl \
-    --header "Content-Type: application/json" \
-    --header 'X-GitHub-Event: push' \
-    --request POST \
-    --data '{"ref":"refs/heads/master","repository":{"full_name":"getsentry/sentry"},"head_commit":{"id":"438cb62a559889b5ae68ce3494c1034c60e50f4a","author":{"name":"wmak","email":"william@wmak.io"}}}' \
-    http://0.0.0.0:5000
+python test_ingestion.py
 ```
 
-To test the Github PR API you can type this:
-
-```shell
-curl \
-    --header "Content-Type: application/json" \
-    --header 'X-GitHub-Event: pull_request' \
-    --request POST \
-    --data '{}' \
-    http://0.0.0.0:5000
-```
+**NOTE**: This script is work-in-progress. Read the code to understand it.
 
 ### Running the pipeline locally
 
