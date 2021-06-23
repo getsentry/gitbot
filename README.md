@@ -1,6 +1,6 @@
-# Sentry Deploy Sync Hook
+# Git Bot Service
 
-This repo contains a hook for updating the reference in getsentry to sentry automatically. There's two ways that this happens.
+This service allows reverting Git changes in Sentry/Getsentry and updates the reference in getsentry to sentry automatically. There's two ways that the latter happens:
 
 If a push happens on Sentry's master, this will clone getsentry and call `bin/bump-sentry` in order to update
 the Sentry's sha on getsentry.
@@ -22,7 +22,7 @@ If you want to deploy a PR, you can follow the same process but choose the branc
 
 By default, the development set up will push changes to [getsentry-test-repo](https://github.com/getsentry/getsentry-test-repo) (which is only available to the productivity team members).
 
-To test against another repo you can use the env variable `DEPLOY_REPO` in order to point to a different repo you have write access to. In order for this to work, such repo needs `bin/bump-sentry` and `cloudbuild.yaml` from the getsentry repo.
+To test against another repo you can use the env variable `GETSENTRY_REPO` in order to point to a different repo you have write access to. In order for this to work, such repo needs `bin/bump-sentry` and `cloudbuild.yaml` from the getsentry repo.
 
 ## Testing changes
 
@@ -36,10 +36,10 @@ Testing pushes:
 
 Testing PR syncs:
 
-- On your sentry repo and the `getsentry-test-repo`(or a repo you define with `DEPLOY_REPO`) create a branch named `test-pr` (name it anything but `test-branch`)
+- On your sentry repo and the `getsentry-test-repo`(or a repo you define with `GETSENTRY_REPO`) create a branch named `test-pr` (name it anything but `test-branch`)
 - Push both branches to your Sentry fork and your getsentry test repo
 - On Sentry (or your fork), open a PR with the word `#sync-getsentry`
-  - Any subsequent pushes to that Sentry branch will trigger a bump on the `DEPLOY_REPO`
+  - Any subsequent pushes to that Sentry branch will trigger a bump on the `GETSENTRY_REPO`
 
 Testing that it can fetch Google Secrets:
 
@@ -77,8 +77,8 @@ Steps:
 Create [a new personal access token](https://github.com/settings/tokens/new) for this project with `repo` access and run the commands below.
 
 ```shell
-echo DEPLOY_SYNC_PAT=<value> > .env
-echo DEPLOY_SYNC_USER=<your_github_user> >> .env
+echo GITBOT_PAT=<value> > .env
+echo GITBOT_USER=<your_github_user> >> .env
 ```
 
 **NOTE**: Docker Compose reads by default variables defined in that file. This will will _not_ be included as part of the Docker image or your Github history.
@@ -132,7 +132,7 @@ curl \
 
 In order to test Github changes through your local set up you need to follow these steps:
 
-- Run `docker-compose up --build -e DRY_RUN=False`
+- `echo "DRY_RUN=False" >> .env` and run `docker-compose up`
   - Verify the output says dry run mode to be off and which repo it will push to
 - Set up [Ngrok](https://ngrok.io/) to redirect Github calls to your localhost
   - `ngrok http 5000` --> Grab the URL ngrok gives you (e.g. `https://6a88fe29c5cc.ngrok.io`)
