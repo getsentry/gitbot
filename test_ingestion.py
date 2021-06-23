@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(LOGGING_LEVEL)
 
 HOSTS = {
-    "dev": "http://0.0.0.0:5000",
+    "dev": "http://0.0.0.0",
     "staging": "https://sentry-deploy-sync-hook-staging-dwunkkvj6a-uc.a.run.app",
 }
 
@@ -46,13 +46,13 @@ def revert_payload_header(repo, sha, author, email):
 
 @click.command()
 @click.option("--host", default="dev", help="Host to test against.")
-# XXX: I wonder if a positional argument would be nicer
+@click.option("--port", help="The port to use.")  # Optional
 @click.option("--action", help="Action to take: [reset|revert].")
 @click.option("--repo", help="Repo to act on.")
 @click.option("--sha", help="Sha to act on.")
 @click.option("--author", help="The name of who's making the request.")  # Optional
 @click.option("--email", help="The email of who's making the request.")  # Optional
-def main(host, action, repo, sha, author, email):
+def main(host, port, action, repo, sha, author, email):
     if action == "reset":
         # This guarantees that this script will hit a fresh remote repo, thus, not failing revert requests
         print(
@@ -61,6 +61,12 @@ def main(host, action, repo, sha, author, email):
         sys.exit(0)
 
     host_url = HOSTS[host]
+
+    if port:
+        if host == "dev" and not port:
+            host_url += ":5000"
+        else:
+            host_url += f":{port}"
 
     if not (author and email):
         author = run("git config --global user.name").stdout.decode("utf-8").strip()

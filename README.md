@@ -49,6 +49,14 @@ Testing that it can fetch Google Secrets:
 
 **NOTE**: The GCR instance does not need to define the authentication token since it fetches it from Google Secrets. It also does not need to define the GOOGLE_APPLICATION_CREDENTIALS env variable since it has a service account associated to the service.
 
+Check that it starts and can receive POST requests:
+
+```shell
+# FAST_STARTUP skips git cloning the primary repos and some checks
+docker run -p 8080:8080 -e FAST_STARTUP=1 gitbot:latest
+curl --request POST http://0.0.0.0:8080
+```
+
 Check if the production set up starts up (GCR logs can sometimes fail to show the issue):
 
 ```shell

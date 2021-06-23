@@ -49,8 +49,9 @@ else:
     assert GETSENTRY_REPO == "getsentry/getsentry"
 
 # This clones/updates the primary repos under /tmp
-update_primary_repo("sentry")
-update_primary_repo("getsentry")
+if not os.environ.get("FAST_STARTUP"):
+    update_primary_repo("sentry")
+    update_primary_repo("getsentry")
 
 app = Flask(__name__)
 
