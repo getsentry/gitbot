@@ -23,5 +23,7 @@ services:
     command: flask run
     volumes:
       - .:/app
+      # To allow checkouts of the primary repos
+      - /tmp:/tmp
     ports:
       - "5000:5000"

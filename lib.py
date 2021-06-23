@@ -11,7 +11,7 @@ class CommandError(Exception):
     pass
 
 
-def run(cmd, **kwargs):
+def run(cmd, cwd=None, env=None, quiet=False):
     # XXX: The output of the clone/push commands shows the PAT
     # GCR does not scrub the PAT. Sentry does
     new_cmd = None
@@ -24,20 +24,21 @@ def run(cmd, **kwargs):
     elif isinstance(cmd, list):
         new_cmd = cmd
 
-    cwd = kwargs.get("cwd")
-    logger.info("> " + " ".join(new_cmd) + f" (cwd: {cwd})" if cwd else "")
+    if not quiet:
+        logger.info("> " + " ".join(new_cmd) + f" (cwd: {cwd})" if cwd else "")
     # Redirect stderr to stdout
     execution = subprocess.run(
-        new_cmd, **kwargs, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        new_cmd, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
-    for l in execution.stdout.splitlines():
-        logger.info(l)
-    logger.info(f"return code: {execution.returncode}")
+    if not quiet:
+        for l in execution.stdout.splitlines():
+            logger.info(l)
+        logger.info(f"return code: {execution.returncode}")
     # If we raise an exception we will see it reported in Sentry and abort code execution
     if execution.returncode != 0:
         # Get some more debugging info and prevent recursion
         if new_cmd[0] == "git" and not new_cmd[1] == "status":
-            run("git status", **kwargs)
+            run("git status", cwd=cwd)
         raise CommandError
     return execution
 
