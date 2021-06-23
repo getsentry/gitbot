@@ -11,7 +11,7 @@ import sys
 import requests
 import click
 
-from config import GITBOT_API_SECRET, SENTRY_REPO, LOGGING_LEVEL
+from config import GITBOT_API_SECRET, GITHUB_WEBHOOK_SECRET, SENTRY_REPO, LOGGING_LEVEL
 from lib import run
 
 logging.basicConfig(format="%(levelname)-8s %(message)s")
@@ -30,7 +30,7 @@ def signature(secret, payload):
     ).hexdigest()
 
 
-def revert_payload_header(repo, sha, author, email):
+def revert_payload_header(repo: str, sha: str, author: str, email: str):
     payload = {"repo": repo, "sha": sha, "name": f"{author} <{email}>"}
     header = {}
     if GITBOT_API_SECRET:
@@ -39,11 +39,31 @@ def revert_payload_header(repo, sha, author, email):
     return payload, header
 
 
+def bump_payload_header(repo: str, sha: str, author: str, email: str):
+    # XXX: In reality, it would be ideal if we checked Github for the metadata
+    print(repo)
+    payload = {
+        "ref": "refs/heads/master",
+        "repository": {
+            "full_name": repo if repo.startswith("getsentry/") else f"getsentry/{repo}",
+        },
+        "head_commit": {"id": sha,},
+        "author": {"name": author, "email": email,},
+    }
+    header = {}
+    if GITHUB_WEBHOOK_SECRET:
+        sign = signature(GITHUB_WEBHOOK_SECRET, payload)
+        header["X-Hub-Signature"] = f"sha1={sign}"
+        header["X-GitHub-Event"] = "push"
+
+    return payload, header
+
+
 @click.command()
 @click.option("--host", default="dev", help="Host to test against.")
 @click.option("--port", help="The port to use.")  # Optional
 @click.option("--action", help="Action to take: [reset|revert].")
-@click.option("--repo", help="Repo to act on.")
+@click.option("--repo", default="sentry", help="Repo to act on.")
 @click.option("--sha", help="Sha to act on.")
 @click.option("--author", help="The name of who's making the request.")  # Optional
 @click.option("--email", help="The email of who's making the request.")  # Optional
@@ -76,6 +96,9 @@ def main(host, port, action, repo, sha, author, email):
     if action == "revert":
         payload, header = revert_payload_header(repo, sha, author, email)
         url = f"{host_url}/api/revert"
+    elif action == "bump":
+        payload, header = bump_payload_header(repo, sha, author, email)
+        url = f"{host_url}/"
     else:
         print("Invalid action.")
         sys.exit("1")
