@@ -49,6 +49,7 @@ def update_checkout(repo_url, checkout):
         run("git config pull.rebase false", cwd=checkout)
 
     # In case it was left in a bad state
+    run("git remote -v", cwd=checkout)
     run("git fetch origin master", cwd=checkout)
     run("git reset --hard origin/master", cwd=checkout)
     run(f"git pull origin master", cwd=checkout, env=COMMITER_ENV)

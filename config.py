@@ -2,6 +2,15 @@ import logging
 import os
 from distutils import util
 
+LOGGING_LEVEL = os.environ.get("LOGGING_LEVEL", logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(LOGGING_LEVEL)
+
+
+def fetch_secret(client: str, uri: str) -> str:
+    logger.info(f"Grabbing secret from {uri}")
+    return client.access_secret_version(name=uri).payload.data.decode("UTF-8")
+
 
 def repo_url_with_pat(repo):
     return f"https://{os.environ.get('GITBOT_USER', 'getsentry-bot')}:{PAT}@github.com/{repo}"
@@ -17,11 +26,9 @@ COMMITER_ENV = {
 # Used in Github Sentry PRs to sync a getsentry branch
 GITBOT_MARKER = "#sync-getsentry"
 
-
 # App behaviour
 DRY_RUN = bool(util.strtobool(os.environ.get("DRY_RUN", "False")))
 ENV = os.environ.get("ENV", "development")
-LOGGING_LEVEL = os.environ.get("LOGGING_LEVEL", logging.INFO)
 IS_DEV = ENV == "development"
 
 # Secrets
@@ -38,16 +45,17 @@ if not PAT and not os.environ.get("FAST_STARTUP"):
     # Create the Secret Manager client.
     client = secretmanager.SecretManagerServiceClient()
     # GCP project in which to store secrets in Secret Manager.
-    PAT = client.access_secret_version(
-        name="projects/sentry-dev-tooling/secrets/GitbotPat/versions/1"
-    ).payload.data.decode("UTF-8")
+    PAT = fetch_secret(
+        client, "projects/sentry-dev-tooling/secrets/GitbotPat/versions/1"
+    )
     version = 3 if ENV != "production" else 2
-    GITHUB_WEBHOOK_SECRET = client.access_secret_version(
-        name=f"projects/sentry-dev-tooling/secrets/GitbotGithubSecret/versions/{version}"
-    ).payload.data.decode("UTF-8")
-    GITBOT_API_SECRET = client.access_secret_version(
-        name="projects/sentry-dev-tooling/secrets/GitbotSecret/versions/1"
-    ).payload.data.decode("UTF-8")
+    GITHUB_WEBHOOK_SECRET = fetch_secret(
+        client,
+        f"projects/sentry-dev-tooling/secrets/GitbotGithubSecret/versions/{version}",
+    )
+    GITBOT_API_SECRET = fetch_secret(
+        client, "projects/sentry-dev-tooling/secrets/GitbotSecret/versions/1"
+    )
 
 
 # Repo related constants
