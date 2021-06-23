@@ -1,6 +1,6 @@
 # Git Bot Service
 
-This service allows reverting Git changes in Sentry/Getsentry and updates the reference in getsentry to sentry automatically. There's two ways that the former happens:
+This service allows reverting Git changes in Sentry/Getsentry and updates the reference in getsentry to sentry automatically. There's two ways that the latter happens:
 
 If a push happens on Sentry's master, this will clone getsentry and call `bin/bump-sentry` in order to update
 the Sentry's sha on getsentry.
