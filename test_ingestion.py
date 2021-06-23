@@ -38,13 +38,11 @@ def revert_payload_header(repo: str, sha: str, author: str, email: str):
     return payload, header
 
 
-def bump_payload_header(repo: str, sha: str, author: str, email: str):
+def bump_payload_header(sha: str, author: str, email: str):
     # XXX: In reality, it would be ideal if we checked Github for the metadata
     payload = {
         "ref": "refs/heads/master",
-        "repository": {
-            "full_name": repo if repo.startswith("getsentry/") else f"getsentry/{repo}",
-        },
+        "repository": {"full_name": "getsentry/sentry-test-repo",},
         "head_commit": {"id": sha,},
         "author": {"name": author, "email": email,},
     }
@@ -95,7 +93,7 @@ def main(host, port, action, repo, sha, author, email):
         payload, header = revert_payload_header(repo, sha, author, email)
         url = f"{host_url}/api/revert"
     elif action == "bump":
-        payload, header = bump_payload_header(repo, sha, author, email)
+        payload, header = bump_payload_header(sha, author, email)
         url = f"{host_url}/"
     else:
         print("Invalid action.")
