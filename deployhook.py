@@ -62,9 +62,9 @@ else:
     logger.info(f"Code bumps will be pushed to {GETSENTRY_BRANCH} on {GETSENTRY_REPO}")
 
 
-def respond(reason, status_code=200, updated=False):
+def respond(reason, status_code=400):
     logger.info(reason)
-    return jsonify(updated=updated, reason=reason), status_code
+    return jsonify(reason=reason), status_code
 
 
 def bump_version(branch, script, *args):
@@ -150,7 +150,7 @@ def process_push():
         else:
             reason = "Unknown repository"
 
-    return respond(reason=reason, updated=updated)
+    return respond(reason=reason, status_code=200 if updated else 400)
 
 
 def process_pull_request():
@@ -192,7 +192,7 @@ def process_pull_request():
         # TODO: It would be ideal if we had a way to communicate back (repo or Slack)
         # that we did bump the version successfully
         updated, reason = bump_version(branch, "bin/bump-sentry", ref_sha)
-        return respond(updated=updated, reason=reason)
+        return respond(reason=reason, status_code=200 if updated else 400)
 
     return respond("Commit not relevant for deploy sync.")
 
@@ -246,8 +246,7 @@ def process_git_revert():
     subject = execution.stdout.decode("utf-8").split('"')[1]
     if repo == "getsentry" and subject.startswith("getsentry/sentry@"):
         return respond(
-            reason=f"{sha} cannot be reverted because it needs to be reverted in Sentry",
-            updated=True,
+            f"{sha} cannot be reverted because it needs to be reverted in Sentry"
         )
 
     run(f"git revert --no-commit {sha}", cwd=tmp_dir, env=COMMITER_ENV)
@@ -271,7 +270,7 @@ def process_git_revert():
     if DRY_RUN:
         push_args += " --dry-run"
     run(push_args, cwd=tmp_dir, env=COMMITER_ENV)
-    return respond(reason=f"{sha} reverted.", updated=True)
+    return respond(reason=f"{sha} reverted.", status_code=200)
 
 
 @app.route("/api/revert", methods=["POST"])
@@ -288,4 +287,4 @@ def revert():
     except CommandError as e:
         sentry_sdk.capture_exception(e)
         logger.info(e)
-        return respond(reason=f"Failed to revert.", status_code=400, updated=False)
+        return respond("Failed to revert.")

@@ -2,8 +2,6 @@ import logging
 import os
 from distutils import util
 
-from google.cloud import secretmanager
-
 
 def repo_url_with_pat(repo):
     return f"https://{os.environ.get('GITBOT_USER', 'getsentry-bot')}:{PAT}@github.com/{repo}"
@@ -32,6 +30,9 @@ GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 GITBOT_API_SECRET = os.environ.get("GITBOT_API_SECRET")
 # On GCR we use Google secrets to fetch the PAT
 if not PAT and not os.environ.get("FAST_STARTUP"):
+    # Loading the module here is useful in systems that the package cannot install (e.g. Apple M1)
+    from google.cloud import secretmanager
+
     # If you're inside of GCR you don't need to set any env variables
     # If you want to test locally you will have to set GOOGLE_APPLICATION_CREDENTIALS to the path of the GCR key
     # Create the Secret Manager client.
