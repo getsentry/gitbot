@@ -240,7 +240,9 @@ def process_git_revert():
 
     # This avoids mutating the primary repo
     run(f"git clone {checkout} {tmp_dir}")
-    execution = run(f'git log -1 --format="%s" {sha}', cwd=tmp_dir, env=COMMITER_ENV)
+    execution = run(
+        f'git log -1 --format="%s" {sha}', cwd=tmp_dir, env=COMMITER_ENV, capture=True
+    )
     # b'"fix(search): Correct a few types on the frontend grammar parser (#26554)"\n'
     # FIXME: Revert of a revert -> '"Revert "ref(snql) Update SDK to latest (#26638)""\n'
     subject = execution.stdout.decode("utf-8").split('"')[1]

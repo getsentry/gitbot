@@ -81,12 +81,12 @@ def main(host, port, action, repo, sha, author, email):
 
     if not (author and email):
         author = (
-            run("git config --global user.name", quiet=True)
+            run("git config --global user.name", capture=True, quiet=True)
             .stdout.decode("utf-8")
             .strip()
         )
         email = (
-            run("git config --global user.email", quiet=True)
+            run("git config --global user.email", capture=True, quiet=True)
             .stdout.decode("utf-8")
             .strip()
         )
