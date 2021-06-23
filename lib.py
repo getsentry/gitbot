@@ -38,8 +38,9 @@ def run(
         # The output will show up live in the console
         execution = subprocess.run(new_cmd, cwd=cwd)
     if not quiet:
-        for l in execution.stdout.splitlines():
-            logger.info(l)
+        if execution.stdout:
+            for l in execution.stdout.splitlines():
+                logger.info(l)
         logger.info(f"return code: {execution.returncode}")
     # If we raise an exception we will see it reported in Sentry and abort code execution
     if execution.returncode != 0:
