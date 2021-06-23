@@ -11,7 +11,7 @@ class CommandError(Exception):
     pass
 
 
-def run(cmd, cwd=None, env=None, quiet=False):
+def run(cmd: str, cwd: str = "/tmp", env: dict = None, quiet: bool = False) -> object:
     # XXX: The output of the clone/push commands shows the PAT
     # GCR does not scrub the PAT. Sentry does
     new_cmd = None
@@ -36,10 +36,7 @@ def run(cmd, cwd=None, env=None, quiet=False):
         logger.info(f"return code: {execution.returncode}")
     # If we raise an exception we will see it reported in Sentry and abort code execution
     if execution.returncode != 0:
-        # Get some more debugging info and prevent recursion
-        if new_cmd[0] == "git" and not new_cmd[1] == "status":
-            run("git status", cwd=cwd)
-        raise CommandError
+        raise CommandError(execution.stdout)
     return execution
 
 

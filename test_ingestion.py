@@ -11,7 +11,7 @@ import sys
 import requests
 import click
 
-from config import SENTRY_REPO, LOGGING_LEVEL
+from config import GITBOT_API_SECRET, SENTRY_REPO, LOGGING_LEVEL
 from lib import run
 
 logging.basicConfig(format="%(levelname)-8s %(message)s")
@@ -23,11 +23,6 @@ HOSTS = {
     "staging": "https://sentry-deploy-sync-hook-staging-dwunkkvj6a-uc.a.run.app",
 }
 
-# For testing against development, we can call this script with or without using secrets
-# For production/staging you will need these defined
-GH_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
-GITBOT_SECRET = os.environ.get("GITBOT_SECRET")
-
 
 def signature(secret, payload):
     return hmac.new(
@@ -38,8 +33,8 @@ def signature(secret, payload):
 def revert_payload_header(repo, sha, author, email):
     payload = {"repo": repo, "sha": sha, "name": f"{author} <{email}>"}
     header = {}
-    if GITBOT_SECRET:
-        sign = signature(GITBOT_SECRET, payload)
+    if GITBOT_API_SECRET:
+        sign = signature(GITBOT_API_SECRET, payload)
         header["X-Signature"] = f"sha1={sign}"
     return payload, header
 
@@ -85,7 +80,9 @@ def main(host, port, action, repo, sha, author, email):
         print("Invalid action.")
         sys.exit("1")
 
-    print("Making request")
+    print(f"Making request: {url}")
+    print(f"- payload: {payload}")
+    print(f"- header: {header}")
     resp = requests.post(url, headers=header, json=payload)
     print(resp.text)
 
