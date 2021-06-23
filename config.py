@@ -65,4 +65,5 @@ GETSENTRY_REPO = os.environ.get("GETSENTRY_REPO", "getsentry/getsentry-test-repo
 GETSENTRY_REPO_WITH_PAT = repo_url_with_pat(GETSENTRY_REPO)
 SENTRY_CHECKOUT_PATH = "/tmp/sentry"
 SENTRY_REPO = os.environ.get("SENTRY_REPO", "getsentry/sentry-test-repo")
+SENTRY_REPO_UPSTREAM = os.environ.get("SENTRY_REPO_UPSTREAM", "getsentry/sentry")
 SENTRY_REPO_WITH_PAT = repo_url_with_pat(SENTRY_REPO)

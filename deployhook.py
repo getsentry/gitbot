@@ -145,7 +145,9 @@ def process_push():
             args += ["--author", author]
 
         # Support Sentry fork when running on development mode
-        if (IS_DEV and repo.split("/")[1] == "sentry") or (repo == SENTRY_REPO):
+        if (IS_DEV and repo.split("/")[1] == "sentry") or (
+            repo == SENTRY_REPO_UPSTREAM
+        ):
             updated, reason = bump_version(GETSENTRY_BRANCH, "bin/bump-sentry", *args)
         else:
             reason = "Unknown repository"
@@ -170,12 +172,12 @@ def process_pull_request():
 
     # No need to make all these checks if we're in development
     if not IS_DEV:
-        if data["repository"]["full_name"] != SENTRY_REPO:
+        if data["repository"]["full_name"] != SENTRY_REPO_UPSTREAM:
             return respond("Unknown repository")
 
         if (
-            head["repo"]["full_name"] != SENTRY_REPO
-            or base["repo"]["full_name"] != SENTRY_REPO
+            head["repo"]["full_name"] != SENTRY_REPO_UPSTREAM
+            or base["repo"]["full_name"] != SENTRY_REPO_UPSTREAM
         ):
             return respond("Invalid head or base repos.")
 
