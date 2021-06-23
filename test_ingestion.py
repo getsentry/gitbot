@@ -40,7 +40,6 @@ def revert_payload_header(repo: str, sha: str, author: str, email: str):
 
 def bump_payload_header(repo: str, sha: str, author: str, email: str):
     # XXX: In reality, it would be ideal if we checked Github for the metadata
-    print(repo)
     payload = {
         "ref": "refs/heads/master",
         "repository": {
