@@ -38,13 +38,13 @@ def revert_payload_header(repo: str, sha: str, author: str, email: str):
     return payload, header
 
 
+# We pretend the change is produced by Sentry's upstream webhook
 def bump_payload_header(sha: str, author: str, email: str):
     # XXX: In reality, it would be ideal if we checked Github for the metadata
     payload = {
         "ref": "refs/heads/master",
-        "repository": {"full_name": "getsentry/sentry-test-repo",},
-        "head_commit": {"id": sha,},
-        "author": {"name": author, "email": email,},
+        "repository": {"full_name": "getsentry/sentry"},
+        "head_commit": {"id": sha, "author": {"name": author, "email": email,},},
     }
     header = {}
     if GITHUB_WEBHOOK_SECRET:
