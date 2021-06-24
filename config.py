@@ -48,7 +48,7 @@ if not PAT and not os.environ.get("FAST_STARTUP"):
     PAT = fetch_secret(
         client, "projects/sentry-dev-tooling/secrets/GitbotPat/versions/1"
     )
-    version = 1 if ENV != "production" else 2
+    version = 4 if ENV != "production" else 2
     GITHUB_WEBHOOK_SECRET = fetch_secret(
         client,
         f"projects/sentry-dev-tooling/secrets/GitbotGithubSecret/versions/{version}",
