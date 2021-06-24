@@ -76,5 +76,5 @@ jobs:
           environment: ${{ steps.info.outputs.environment }}
         env:
           SENTRY_ORG: sentry
-          SENTRY_PROJECT: sentry-deploy-sync-hook
+          SENTRY_PROJECT: gitbot
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
