@@ -12,10 +12,14 @@ services:
       - FLASK_APP=deployhook.py
       - FLASK_ENV=development
       - FLASK_RUN_HOST=0.0.0.0
-      - GETSENTRY_REPO
       # You need to create a personal access token with repo level access
       - GITBOT_USER
       - GITBOT_PAT
+      - GITBOT_API_SECRET
+      - GITHUB_WEBHOOK_SECRET
+      # Repos
+      - GETSENTRY_REPO
+      - SENTRY_REPO
     command: flask run
     volumes:
       - .:/app

@@ -3,6 +3,7 @@ import hashlib
 import logging
 import tempfile
 import subprocess
+from operator import itemgetter
 
 import sentry_sdk
 
@@ -10,6 +11,7 @@ from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from config import *
+from lib import *
 
 logging.basicConfig(
     level=LOGGING_LEVEL,
@@ -34,6 +36,8 @@ if ENV != "development":
     )
     if not GITHUB_WEBHOOK_SECRET:
         raise SystemError("Empty GITHUB_WEBHOOK_SECRET!")
+    if not GITBOT_API_SECRET:
+        raise SystemError("Empty GITBOT_API_SECRET!")
 
 # Only the production instance is allowed to push to the real repos
 # We don't want more than one instance pushing to real repo by mistake
@@ -44,9 +48,12 @@ else:
     assert SENTRY_REPO == "getsentry/sentry"
     assert GETSENTRY_REPO == "getsentry/getsentry"
 
+# This clones/updates the primary repos under /tmp
+if not os.environ.get("FAST_STARTUP"):
+    update_primary_repo("sentry")
+    update_primary_repo("getsentry")
 
 app = Flask(__name__)
-
 
 if DRY_RUN:
     logger.info("Dry run mode: on")
@@ -55,9 +62,9 @@ else:
     logger.info(f"Code bumps will be pushed to {GETSENTRY_BRANCH} on {GETSENTRY_REPO}")
 
 
-def respond(reason, updated=False):
+def respond(reason, status_code=400):
     logger.info(reason)
-    return jsonify(updated=updated, reason=reason)
+    return jsonify(reason=reason), status_code
 
 
 def bump_version(branch, script, *args):
@@ -138,12 +145,14 @@ def process_push():
             args += ["--author", author]
 
         # Support Sentry fork when running on development mode
-        if (IS_DEV and repo.split("/")[1] == "sentry") or (repo == SENTRY_REPO):
+        if (IS_DEV and repo.split("/")[1] == "sentry") or (
+            repo == SENTRY_REPO_UPSTREAM
+        ):
             updated, reason = bump_version(GETSENTRY_BRANCH, "bin/bump-sentry", *args)
         else:
             reason = "Unknown repository"
 
-    return respond(reason=reason, updated=updated)
+    return respond(reason=reason, status_code=200 if updated else 400)
 
 
 def process_pull_request():
@@ -163,12 +172,12 @@ def process_pull_request():
 
     # No need to make all these checks if we're in development
     if not IS_DEV:
-        if data["repository"]["full_name"] != SENTRY_REPO:
+        if data["repository"]["full_name"] != SENTRY_REPO_UPSTREAM:
             return respond("Unknown repository")
 
         if (
-            head["repo"]["full_name"] != SENTRY_REPO
-            or base["repo"]["full_name"] != SENTRY_REPO
+            head["repo"]["full_name"] != SENTRY_REPO_UPSTREAM
+            or base["repo"]["full_name"] != SENTRY_REPO_UPSTREAM
         ):
             return respond("Invalid head or base repos.")
 
@@ -185,7 +194,7 @@ def process_pull_request():
         # TODO: It would be ideal if we had a way to communicate back (repo or Slack)
         # that we did bump the version successfully
         updated, reason = bump_version(branch, "bin/bump-sentry", ref_sha)
-        return respond(updated=updated, reason=reason)
+        return respond(reason=reason, status_code=200 if updated else 400)
 
     return respond("Commit not relevant for deploy sync.")
 
@@ -205,7 +214,7 @@ def index():
         request.data,
         str(request.headers.get("X-Hub-Signature", "").replace("sha1=", "")),
     ):
-        return respond(reason="Cannot validate payload signature.")
+        return respond(reason="Cannot validate payload signature.", status_code=403)
 
     event_type = request.headers.get("X-GitHub-Event")
 
@@ -215,3 +224,71 @@ def index():
         return process_pull_request()
     else:
         return respond("Unsupported event type.")
+
+
+def process_git_revert():
+    data = request.get_json()
+    repo, sha, name = itemgetter("repo", "sha", "name")(data)
+    name = data["name"]
+    logger.info(f"{name} has requested to revert {sha} from {repo}")
+
+    tmp_dir = tempfile.mkdtemp()
+    repo_url = SENTRY_REPO_WITH_PAT if repo == "sentry" else GETSENTRY_REPO_WITH_PAT
+    checkout = SENTRY_CHECKOUT_PATH if repo == "sentry" else GETSENTRY_CHECKOUT_PATH
+
+    # If there were multiple revert requests very close to each other there's a chance
+    # that more than one `git pull` would be executed at the same time
+    update_checkout(repo_url, checkout)
+
+    # This avoids mutating the primary repo
+    run(f"git clone {checkout} {tmp_dir}")
+    execution = run(
+        f'git log -1 --format="%s" {sha}', cwd=tmp_dir, env=COMMITER_ENV, capture=True
+    )
+    # b'"fix(search): Correct a few types on the frontend grammar parser (#26554)"\n'
+    # FIXME: Revert of a revert -> '"Revert "ref(snql) Update SDK to latest (#26638)""\n'
+    subject = execution.stdout.decode("utf-8").split('"')[1]
+    if repo == "getsentry" and subject.startswith("getsentry/sentry@"):
+        return respond(
+            f"{sha} cannot be reverted because it needs to be reverted in Sentry"
+        )
+
+    run(f"git revert --no-commit {sha}", cwd=tmp_dir, env=COMMITER_ENV)
+    run(
+        [
+            "git",
+            "commit",
+            "-m",
+            f'Revert "{subject}"',
+            "-m",
+            f"This reverts commit {sha}.",
+            "-m",
+            f"Co-authored-by: {name}",
+        ],
+        cwd=tmp_dir,
+        env=COMMITER_ENV,
+    )
+
+    # Since we cloned from a local checkout we need to make sure to push to the remote repo
+    push_args = f"git push {repo_url}"
+    if DRY_RUN:
+        push_args += " --dry-run"
+    run(push_args, cwd=tmp_dir, env=COMMITER_ENV)
+    return respond(reason=f"{sha} reverted.", status_code=200)
+
+
+@app.route("/api/revert", methods=["POST"])
+def revert():
+    if GITBOT_API_SECRET and not valid_payload(
+        GITBOT_API_SECRET,
+        request.data,
+        str(request.headers.get("X-Signature", "").replace("sha1=", "")),
+    ):
+        return respond(reason="Cannot validate payload signature.", status_code=403)
+
+    try:
+        return process_git_revert()
+    except CommandError as e:
+        sentry_sdk.capture_exception(e)
+        logger.info(e)
+        return respond("Failed to revert.")

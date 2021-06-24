@@ -9,14 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Build Docker image
-      run: |
-        docker build .
+      - name: Build Docker image
+        run: |
+          # We are not yet using the new naming in the deploy workflow
+          docker build -t gitbot:latest .
+          docker run -p 8080:8080 -d -e GOOGLE_APPLICATION_CREDENTIALS -e FAST_STARTUP=1 gitbot:latest
+          sleep 10 && curl --request POST http://0.0.0.0:8080
 
-    - name: Test local dev starts up
-      run: |
-        docker-compose up -d
-        docker-compose down
+      - name: Test local dev starts up
+        run: |
+          docker-compose up -d
+          docker-compose down

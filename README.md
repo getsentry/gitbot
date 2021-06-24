@@ -49,12 +49,20 @@ Testing that it can fetch Google Secrets:
 
 **NOTE**: The GCR instance does not need to define the authentication token since it fetches it from Google Secrets. It also does not need to define the GOOGLE_APPLICATION_CREDENTIALS env variable since it has a service account associated to the service.
 
+Check that it starts and can receive POST requests:
+
+```shell
+# FAST_STARTUP skips git cloning the primary repos and some checks
+docker run -p 8080:8080 -e FAST_STARTUP=1 gitbot:latest
+curl --request POST http://0.0.0.0:8080
+```
+
 Check if the production set up starts up (GCR logs can sometimes fail to show the issue):
 
 ```shell
 docker run \
   -e GOOGLE_APPLICATION_CREDENTIALS=gcr-key.json \
-  -v `pwd`:/app --rm -ti sentry-deploy-sync-hook
+  -v `pwd`:/app --rm -ti gitbot
 ```
 
 ## Rotate secret
@@ -102,27 +110,13 @@ pip install -r requirements.txt
 flask run
 ```
 
-To test the push API you can use `curl`:
+To test the different APIs use the `test_ingestion.py` script:
 
 ```shell
-curl \
-    --header "Content-Type: application/json" \
-    --header 'X-GitHub-Event: push' \
-    --request POST \
-    --data '{"ref":"refs/heads/master","repository":{"full_name":"getsentry/sentry"},"head_commit":{"id":"438cb62a559889b5ae68ce3494c1034c60e50f4a","author":{"name":"wmak","email":"william@wmak.io"}}}' \
-    http://0.0.0.0:5000
+python test_ingestion.py
 ```
 
-To test the Github PR API you can type this:
-
-```shell
-curl \
-    --header "Content-Type: application/json" \
-    --header 'X-GitHub-Event: pull_request' \
-    --request POST \
-    --data '{}' \
-    http://0.0.0.0:5000
-```
+**NOTE**: This script is work-in-progress. Read the code to understand it.
 
 ### Running the pipeline locally
 
