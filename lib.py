@@ -27,7 +27,9 @@ def run(
         new_cmd = cmd
 
     if not quiet:
-        logger.info("> " + " ".join(new_cmd) + f" (cwd: {cwd})" if cwd else "")
+        logger.info("> " + " ".join(new_cmd) + f" (cwd: {cwd})")
+        if env:
+            logger.info(f"env: {env}")
 
     if capture:
         # Capture the output so you can analyze it later
@@ -37,14 +39,24 @@ def run(
     else:
         # The output will show up live in the console
         execution = subprocess.run(new_cmd, cwd=cwd)
-    if not quiet:
-        if execution.stdout:
-            for l in execution.stdout.splitlines():
-                logger.info(l)
-        logger.info(f"return code: {execution.returncode}")
+
+    output = ""
+    if execution.stdout:
+        for l in execution.stdout.splitlines():
+            string = l.decode("utf-8")
+            output += string
+            if not quiet:
+                logger.info(string)
+
+    execution.stdout = output.strip()
     # If we raise an exception we will see it reported in Sentry and abort code execution
     if execution.returncode != 0:
-        raise CommandError(execution.stdout)
+        output = ""
+        if execution.stdout:
+            output = execution.stdout
+        if execution.stderr:
+            output += execution.stderr
+        raise CommandError(output)
     return execution
 
 
@@ -57,10 +69,9 @@ def update_checkout(repo_url, checkout):
         run("git config pull.rebase false", cwd=checkout)
 
     # In case it was left in a bad state
-    run("git remote -v", cwd=checkout)
     run("git fetch origin master", cwd=checkout)
     run("git reset --hard origin/master", cwd=checkout)
-    run(f"git pull origin master", cwd=checkout, env=COMMITER_ENV)
+    run("git pull origin master", cwd=checkout)
 
 
 # Alias for updating the Sentry and Getsentry repos

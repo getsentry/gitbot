@@ -16,9 +16,7 @@ from lib import *
 logging.basicConfig(
     level=LOGGING_LEVEL,
     # GCR logs already include the time
-    format="%(asctime)s %(levelname)-8s %(message)s"
-    if ENV == "development"
-    else "%(levelname)-8s %(message)s",
+    format="%(message)s" if ENV == "development" else "%(levelname)-8s %(message)s",
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger(__name__)
@@ -48,6 +46,8 @@ else:
     assert SENTRY_REPO == "getsentry/sentry"
     assert GETSENTRY_REPO == "getsentry/getsentry"
 
+os.environ["EMAIL"] = COMMITTER_EMAIL
+os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
 # This clones/updates the primary repos under /tmp
 if not os.environ.get("FAST_STARTUP"):
     update_primary_repo("sentry")
@@ -62,9 +62,11 @@ else:
     logger.info(f"Code bumps will be pushed to {GETSENTRY_BRANCH} on {GETSENTRY_REPO}")
 
 
-def respond(reason, status_code=400):
-    logger.info(reason)
-    return jsonify(reason=reason), status_code
+def respond(data, status_code=400):
+    logger.info(data)
+    if isinstance(data, str):
+        data = {"reason": data}
+    return jsonify(data), status_code
 
 
 def bump_version(branch, script, *args):
@@ -152,7 +154,7 @@ def process_push():
         else:
             reason = "Unknown repository"
 
-    return respond(reason=reason, status_code=200 if updated else 400)
+    return respond(reason, status_code=200 if updated else 400)
 
 
 def process_pull_request():
@@ -194,7 +196,7 @@ def process_pull_request():
         # TODO: It would be ideal if we had a way to communicate back (repo or Slack)
         # that we did bump the version successfully
         updated, reason = bump_version(branch, "bin/bump-sentry", ref_sha)
-        return respond(reason=reason, status_code=200 if updated else 400)
+        return respond(reason, status_code=200 if updated else 400)
 
     return respond("Commit not relevant for deploy sync.")
 
@@ -214,7 +216,7 @@ def index():
         request.data,
         str(request.headers.get("X-Hub-Signature", "").replace("sha1=", "")),
     ):
-        return respond(reason="Cannot validate payload signature.", status_code=403)
+        return respond("Cannot validate payload signature.", status_code=403)
 
     event_type = request.headers.get("X-GitHub-Event")
 
@@ -242,18 +244,16 @@ def process_git_revert():
 
     # This avoids mutating the primary repo
     run(f"git clone {checkout} {tmp_dir}")
-    execution = run(
-        f'git log -1 --format="%s" {sha}', cwd=tmp_dir, env=COMMITER_ENV, capture=True
-    )
-    # b'"fix(search): Correct a few types on the frontend grammar parser (#26554)"\n'
-    # FIXME: Revert of a revert -> '"Revert "ref(snql) Update SDK to latest (#26638)""\n'
-    subject = execution.stdout.decode("utf-8").split('"')[1]
+    execution = run(f'git log -1 --format="%s" {sha}', cwd=tmp_dir, capture=True)
+    # "fix(search): Correct a few types on the frontend grammar parser (#26554)"
+    # "Revert "ref(snql) Update SDK to latest (#26638)""
+    subject = execution.stdout.replace('"', "")
     if repo == "getsentry" and subject.startswith("getsentry/sentry@"):
         return respond(
             f"{sha} cannot be reverted because it needs to be reverted in Sentry"
         )
 
-    run(f"git revert --no-commit {sha}", cwd=tmp_dir, env=COMMITER_ENV)
+    run(f"git revert --no-commit {sha}", cwd=tmp_dir)
     run(
         [
             "git",
@@ -266,15 +266,17 @@ def process_git_revert():
             f"Co-authored-by: {name}",
         ],
         cwd=tmp_dir,
-        env=COMMITER_ENV,
     )
 
     # Since we cloned from a local checkout we need to make sure to push to the remote repo
     push_args = f"git push {repo_url}"
     if DRY_RUN:
         push_args += " --dry-run"
-    run(push_args, cwd=tmp_dir, env=COMMITER_ENV)
-    return respond(reason=f"{sha} reverted.", status_code=200)
+    run(push_args, cwd=tmp_dir)
+    revert_sha = run("git rev-parse origin/master", cwd=tmp_dir, capture=True).stdout
+    return respond(
+        {"reason": f"{sha} reverted.", "revert_sha": revert_sha}, status_code=200
+    )
 
 
 @app.route("/api/revert", methods=["POST"])
@@ -284,7 +286,7 @@ def revert():
         request.data,
         str(request.headers.get("X-Signature", "").replace("sha1=", "")),
     ):
-        return respond(reason="Cannot validate payload signature.", status_code=403)
+        return respond("Cannot validate payload signature.", status_code=403)
 
     try:
         return process_git_revert()
