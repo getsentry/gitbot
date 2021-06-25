@@ -51,6 +51,9 @@ os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
 # This clones/updates the primary repos under /tmp
 if not os.environ.get("FAST_STARTUP"):
     update_primary_repo("sentry")
+    if ENV != "production":
+        sync_with_upstream(SENTRY_CHECKOUT_PATH, repo_url_with_pat("getsentry/sentry"))
+
     update_primary_repo("getsentry")
 
 app = Flask(__name__)
@@ -151,6 +154,17 @@ def process_push():
             repo == SENTRY_REPO_UPSTREAM
         ):
             updated, reason = bump_version(GETSENTRY_BRANCH, "bin/bump-sentry", *args)
+            # This makes sentry-test-repo always keeping up with Sentry
+            if ENV == "staging":
+                try:
+                    sync_with_upstream(
+                        SENTRY_CHECKOUT_PATH, repo_url_with_pat("getsentry/sentry")
+                    )
+                except Exception as e:
+                    logger.warn(
+                        "We failed to sync Sentry with Sentry Test Repo (We will keep going)"
+                    )
+                    logger.exception(e)
         else:
             reason = "Unknown repository"
 
