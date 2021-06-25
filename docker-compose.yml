@@ -23,5 +23,6 @@ services:
     command: flask run
     volumes:
       - .:/app
+      - /tmp:/tmp
     ports:
       - "5000:5000"

@@ -11,9 +11,7 @@ class CommandError(Exception):
     pass
 
 
-def run(
-    cmd: str, cwd: str = "/tmp", env: dict = None, capture=False, quiet: bool = False
-) -> object:
+def run(cmd: str, cwd: str = "/tmp", capture=False, quiet: bool = False) -> object:
     # XXX: The output of the clone/push commands shows the PAT
     # GCR does not scrub the PAT. Sentry does
     new_cmd = None
@@ -27,24 +25,34 @@ def run(
         new_cmd = cmd
 
     if not quiet:
-        logger.info("> " + " ".join(new_cmd) + f" (cwd: {cwd})" if cwd else "")
+        logger.info("> " + " ".join(new_cmd) + f" (cwd: {cwd})")
 
     if capture:
         # Capture the output so you can analyze it later
         execution = subprocess.run(
-            new_cmd, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            new_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
     else:
         # The output will show up live in the console
         execution = subprocess.run(new_cmd, cwd=cwd)
-    if not quiet:
-        if execution.stdout:
-            for l in execution.stdout.splitlines():
-                logger.info(l)
-        logger.info(f"return code: {execution.returncode}")
+
+    output = ""
+    if execution.stdout:
+        for l in execution.stdout.splitlines():
+            string = l.decode("utf-8")
+            output += string
+            if not quiet:
+                logger.info(string)
+
+    execution.stdout = output.strip()
     # If we raise an exception we will see it reported in Sentry and abort code execution
     if execution.returncode != 0:
-        raise CommandError(execution.stdout)
+        output = ""
+        if execution.stdout:
+            output = execution.stdout
+        if execution.stderr:
+            output += execution.stderr
+        raise CommandError(output)
     return execution
 
 
@@ -56,7 +64,7 @@ def sync_with_upstream(checkout_path, upstream_url):
 
     run("git fetch upstream master", cwd=checkout_path)
     run("git reset --hard upstream/master", cwd=checkout_path)
-    run(f"git push -f origin master", cwd=checkout_path, env=COMMITER_ENV)
+    run(f"git push -f origin master", cwd=checkout_path)
 
 
 def update_checkout(repo_url, checkout_path):
@@ -68,10 +76,9 @@ def update_checkout(repo_url, checkout_path):
         run("git config pull.rebase false", cwd=checkout_path)
 
     # In case it was left in a bad state
-    run("git remote -v", cwd=checkout_path)
     run("git fetch origin master", cwd=checkout_path)
     run("git reset --hard origin/master", cwd=checkout_path)
-    run(f"git pull origin master", cwd=checkout_path, env=COMMITER_ENV)
+    run(f"git pull origin master", cwd=checkout_path)
 
 
 # Alias for updating the Sentry and Getsentry repos

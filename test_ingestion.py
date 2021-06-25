@@ -78,16 +78,8 @@ def main(host, port, action, repo, sha, author, email):
         host_url += f":{port}"
 
     if not (author and email):
-        author = (
-            run("git config --global user.name", capture=True, quiet=True)
-            .stdout.decode("utf-8")
-            .strip()
-        )
-        email = (
-            run("git config --global user.email", capture=True, quiet=True)
-            .stdout.decode("utf-8")
-            .strip()
-        )
+        author = run("git config --global user.name", capture=True, quiet=True).stdout
+        email = run("git config --global user.email", capture=True, quiet=True).stdout
 
     if action == "revert":
         payload, header = revert_payload_header(repo, sha, author, email)
