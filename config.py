@@ -17,12 +17,7 @@ def repo_url_with_pat(repo):
 
 
 COMMITTER_NAME = "Sentry Bot"
-COMMITTER_EMAIL = "bot@getsentry.com"
-# For now, we're making this to be used in specific steps, however, we will make it global in the future
-COMMITER_ENV = {
-    "GIT_AUTHOR_NAME": "getsentry-bot",
-    "EMAIL": "bot@sentry.io",
-}
+COMMITTER_EMAIL = "bot@sentry.io"
 # Used in Github Sentry PRs to sync a getsentry branch
 GITBOT_MARKER = "#sync-getsentry"
 
