@@ -48,19 +48,30 @@ def run(
     return execution
 
 
-def update_checkout(repo_url, checkout):
-    logger.info(f"About to clone/pull {repo_url} to {checkout}.")
-    if not os.path.exists(checkout):
+def sync_with_upstream(checkout_path, upstream_url):
+    try:
+        run("git remote get-url upstream", cwd=checkout_path)
+    except CommandError:
+        run(f"git remote add upstream {upstream_url}", cwd=checkout_path)
+
+    run("git fetch upstream master", cwd=checkout_path)
+    run("git reset --hard upstream/master", cwd=checkout_path)
+    run(f"git push -f origin master", cwd=checkout_path, env=COMMITER_ENV)
+
+
+def update_checkout(repo_url, checkout_path):
+    logger.info(f"About to clone/pull {repo_url} to {checkout_path}.")
+    if not os.path.exists(checkout_path):
         # We clone before the app is running. Requests will clone from this checkout
-        run(f"git clone {repo_url} {checkout}")
+        run(f"git clone {repo_url} {checkout_path}")
         # This silences some Git hints. This is the recommended default setting
-        run("git config pull.rebase false", cwd=checkout)
+        run("git config pull.rebase false", cwd=checkout_path)
 
     # In case it was left in a bad state
-    run("git remote -v", cwd=checkout)
-    run("git fetch origin master", cwd=checkout)
-    run("git reset --hard origin/master", cwd=checkout)
-    run(f"git pull origin master", cwd=checkout, env=COMMITER_ENV)
+    run("git remote -v", cwd=checkout_path)
+    run("git fetch origin master", cwd=checkout_path)
+    run("git reset --hard origin/master", cwd=checkout_path)
+    run(f"git pull origin master", cwd=checkout_path, env=COMMITER_ENV)
 
 
 # Alias for updating the Sentry and Getsentry repos
