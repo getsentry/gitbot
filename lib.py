@@ -56,17 +56,6 @@ def run(cmd: str, cwd: str = "/tmp", capture=False, quiet: bool = False) -> obje
     return execution
 
 
-def sync_with_upstream(checkout_path, upstream_url):
-    try:
-        run("git remote get-url upstream", cwd=checkout_path)
-    except CommandError:
-        run(f"git remote add upstream {upstream_url}", cwd=checkout_path)
-
-    run("git fetch upstream master", cwd=checkout_path)
-    run("git reset --hard upstream/master", cwd=checkout_path)
-    run(f"git push -f origin master", cwd=checkout_path)
-
-
 def update_checkout(repo_url, checkout_path):
     logger.info(f"About to clone/pull {repo_url} to {checkout_path}.")
     if not os.path.exists(checkout_path):
@@ -79,6 +68,17 @@ def update_checkout(repo_url, checkout_path):
     run("git fetch origin master", cwd=checkout_path)
     run("git reset --hard origin/master", cwd=checkout_path)
     run(f"git pull origin master", cwd=checkout_path)
+
+
+def sync_with_upstream(checkout_path, upstream_url):
+    try:
+        run("git remote get-url upstream", cwd=checkout_path)
+    except CommandError:
+        run(f"git remote add upstream {upstream_url}", cwd=checkout_path)
+
+    run("git fetch upstream master", cwd=checkout_path)
+    run("git reset --hard upstream/master", cwd=checkout_path)
+    run(f"git push -f origin master", cwd=checkout_path)
 
 
 # Alias for updating the Sentry and Getsentry repos
