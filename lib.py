@@ -78,7 +78,7 @@ def sync_with_upstream(checkout_path, upstream_url):
 
     run("git fetch upstream master", cwd=checkout_path)
     run("git reset --hard upstream/master", cwd=checkout_path)
-    run(f"git push -f origin master", cwd=checkout_path)
+    run("git push -f origin master", cwd=checkout_path)
 
 
 # Alias for updating the Sentry and Getsentry repos
