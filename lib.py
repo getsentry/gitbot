@@ -47,11 +47,6 @@ def run(cmd: str, cwd: str = "/tmp", capture=False, quiet: bool = False) -> obje
     execution.stdout = output.strip()
     # If we raise an exception we will see it reported in Sentry and abort code execution
     if execution.returncode != 0:
-        output = ""
-        if execution.stdout:
-            output = execution.stdout
-        if execution.stderr:
-            output += execution.stderr
         raise CommandError(output)
     return execution
 
