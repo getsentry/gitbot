@@ -313,5 +313,5 @@ def revert():
         return process_git_revert()
     except CommandError as e:
         sentry_sdk.capture_exception(e)
-        logger.info(e)
+        logger.exception(e)
         return respond("Failed to revert.")
