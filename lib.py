@@ -37,7 +37,7 @@ def run(cmd: str, cwd: str = "/tmp", quiet: bool = False) -> object:
     if execution.stdout:
         for l in execution.stdout.splitlines():
             string = l.decode("utf-8")
-            output += string
+            output += string + "\n"
             if not quiet:
                 logger.info(string)
 
