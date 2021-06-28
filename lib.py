@@ -11,7 +11,7 @@ class CommandError(Exception):
     pass
 
 
-def run(cmd: str, cwd: str = "/tmp", capture=False, quiet: bool = False) -> object:
+def run(cmd: str, cwd: str = "/tmp", quiet: bool = False) -> object:
     # XXX: The output of the clone/push commands shows the PAT
     # GCR does not scrub the PAT. Sentry does
     new_cmd = None
@@ -27,14 +27,11 @@ def run(cmd: str, cwd: str = "/tmp", capture=False, quiet: bool = False) -> obje
     if not quiet:
         logger.info("> " + " ".join(new_cmd) + f" (cwd: {cwd})")
 
-    if capture:
-        # Capture the output so you can analyze it later
-        execution = subprocess.run(
-            new_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )
-    else:
-        # The output will show up live in the console
-        execution = subprocess.run(new_cmd, cwd=cwd)
+    # Capture the output so you can process it later and to show up in Sentry
+    # Redirect stderr to stdout
+    execution = subprocess.run(
+        new_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
 
     output = ""
     if execution.stdout:
