@@ -52,7 +52,14 @@ os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
 if not os.environ.get("FAST_STARTUP"):
     update_primary_repo("sentry")
     if ENV != "production":
-        sync_with_upstream(SENTRY_CHECKOUT_PATH, repo_url_with_pat("getsentry/sentry"))
+        # We should report errors in here but continue since this is only a helper function for staging
+        try:
+            sync_with_upstream(
+                SENTRY_CHECKOUT_PATH, repo_url_with_pat("getsentry/sentry")
+            )
+        except CommandError as e:
+            sentry_sdk.capture_exception(e)
+            logger.exception(e)
 
     update_primary_repo("getsentry")
 
