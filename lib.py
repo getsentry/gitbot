@@ -70,7 +70,7 @@ def sync_with_upstream(checkout_path, upstream_url):
     """
     try:
         run("git remote get-url upstream", cwd=checkout_path)
-    except:
+    except CommandError:
         run(f"git remote add upstream {upstream_url}", cwd=checkout_path)
 
     run("git fetch upstream master", cwd=checkout_path)
