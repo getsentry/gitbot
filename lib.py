@@ -68,10 +68,11 @@ def sync_with_upstream(checkout_path, upstream_url):
     This helps to bring a test repo to be in sync withs related upstream repo.
     Useful for staging set up.
     """
-    run(
-        f"git remote get-url upstream || git remote add upstream {upstream_url}",
-        cwd=checkout_path,
-    )
+    try:
+        run("git remote get-url upstream", cwd=checkout_path)
+    except:
+        run(f"git remote add upstream {upstream_url}", cwd=checkout_path)
+
     run("git fetch upstream master", cwd=checkout_path)
     run("git reset --hard upstream/master", cwd=checkout_path)
     run("git push -f origin master", cwd=checkout_path)
