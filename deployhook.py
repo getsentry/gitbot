@@ -51,8 +51,6 @@ os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
 # This clones/updates the primary repos under /tmp
 if not os.environ.get("FAST_STARTUP"):
     update_primary_repo("sentry")
-    if ENV != "production":
-        sync_with_upstream(SENTRY_CHECKOUT_PATH, repo_url_with_pat("getsentry/sentry"))
 
     update_primary_repo("getsentry")
 
@@ -258,7 +256,7 @@ def process_git_revert():
 
     # This avoids mutating the primary repo
     run(f"git clone {checkout} {tmp_dir}")
-    execution = run(f'git log -1 --format="%s" {sha}', cwd=tmp_dir, capture=True)
+    execution = run(f'git log -1 --format="%s" {sha}', cwd=tmp_dir)
     # "fix(search): Correct a few types on the frontend grammar parser (#26554)"
     # "Revert "ref(snql) Update SDK to latest (#26638)""
     subject = execution.stdout.replace('"', "")
@@ -287,7 +285,7 @@ def process_git_revert():
     if DRY_RUN:
         push_args += " --dry-run"
     run(push_args, cwd=tmp_dir)
-    revert_sha = run("git rev-parse origin/master", cwd=tmp_dir, capture=True).stdout
+    revert_sha = run("git rev-parse origin/master", cwd=tmp_dir).stdout
     return respond(
         {"reason": f"{sha} reverted.", "revert_sha": revert_sha}, status_code=200
     )
@@ -306,5 +304,5 @@ def revert():
         return process_git_revert()
     except CommandError as e:
         sentry_sdk.capture_exception(e)
-        logger.info(e)
+        logger.exception(e)
         return respond("Failed to revert.")
