@@ -67,6 +67,8 @@ def respond(data, status_code):
     logger.info(data)
     if isinstance(data, str):
         data = {"reason": data}
+    if status_code != 200:
+        sentry_sdk.capture_message(data["reason"], "fatal")
     return jsonify(data), status_code
 
 
@@ -181,7 +183,7 @@ def process_pull_request():
     action = data.get("action")
     if action not in ["synchronize", "opened"]:
         logger.info(f"Action: '{action}' not in 'synchronize' or 'opened'")
-        return respond("Invalid action for pull_request event.", status_code=200)
+        return respond("Unsupported action for pull_request event.", status_code=200)
 
     # Check that the PR is from the same repo
     pull_request = data["pull_request"]
