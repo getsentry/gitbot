@@ -63,7 +63,7 @@ else:
     logger.info(f"Code bumps will be pushed to {GETSENTRY_BRANCH} on {GETSENTRY_REPO}")
 
 
-def respond(data, status_code=400):
+def respond(data, status_code):
     logger.info(data)
     if isinstance(data, str):
         data = {"reason": data}
@@ -111,6 +111,8 @@ def bump_version(branch, script, *args):
     return True, "Executed: {!r}".format([script] + list(args))
 
 
+# Github's UI looks really bad when most responses are 400
+# Let's only turn it red when something actually goes bad
 def process_push():
     """Handle "push" events to master branch"""
     # XXX: On what occassions would we want to use request.args.get("branches")?
@@ -125,7 +127,7 @@ def process_push():
 
     if data.get("ref") not in branches:
         logger.info(f'{data.get("ref")} not in {branches}')
-        return respond("Commit against untracked branch.")
+        return respond("Commit against untracked branch.", status_code=200)
 
     repo = data["repository"]["full_name"]
     head_commit = data.get("head_commit", {})
@@ -140,7 +142,7 @@ def process_push():
     else:
         author = None
 
-    updated = False
+    updated = True
     reason = "Commit not relevant for deploy sync."
     if ref_sha is not None:
         args = [ref_sha]
@@ -169,6 +171,8 @@ def process_push():
     return respond(reason, status_code=200 if updated else 400)
 
 
+# Github's UI looks really bad when most responses are 400
+# Let's only turn it red when something actually goes bad
 def process_pull_request():
     """Handle "pull_request" events from PRs with the deploy marker set"""
     data = request.get_json()
@@ -177,7 +181,7 @@ def process_pull_request():
     action = data.get("action")
     if action not in ["synchronize", "opened"]:
         logger.info(f"Action: '{action}' not in 'synchronize' or 'opened'")
-        return respond("Invalid action for pull_request event.")
+        return respond("Invalid action for pull_request event.", status_code=200)
 
     # Check that the PR is from the same repo
     pull_request = data["pull_request"]
@@ -187,30 +191,29 @@ def process_pull_request():
     # No need to make all these checks if we're in development
     if not IS_DEV:
         if data["repository"]["full_name"] != SENTRY_REPO_UPSTREAM:
-            return respond("Unknown repository")
+            return respond("Unknown repository", status_code=200)
 
         if (
             head["repo"]["full_name"] != SENTRY_REPO_UPSTREAM
             or base["repo"]["full_name"] != SENTRY_REPO_UPSTREAM
         ):
-            return respond("Invalid head or base repos.")
+            return respond("Invalid head or base repos.", status_code=200)
 
         if pull_request["merged"]:
-            return respond("Pull request is already merged.")
+            return respond("Pull request is already merged.", status_code=200)
 
     body = pull_request["body"] or ""
     if body.find(GITBOT_MARKER) == -1:
-        return respond("Deploy marker not found.")
+        return respond("Deploy marker not found.", status_code=200)
 
     ref_sha = head["sha"]
     branch = head["ref"]
     if ref_sha:
-        # TODO: It would be ideal if we had a way to communicate back (repo or Slack)
-        # that we did bump the version successfully
+        # We turn red when the code did not bump
         updated, reason = bump_version(branch, "bin/bump-sentry", ref_sha)
         return respond(reason, status_code=200 if updated else 400)
 
-    return respond("Commit not relevant for deploy sync.")
+    return respond("Commit not relevant for deploy sync.", status_code=200)
 
 
 def valid_payload(secret: str, payload: str, signature: str) -> bool:
@@ -237,7 +240,7 @@ def index():
     elif event_type == "pull_request":
         return process_pull_request()
     else:
-        return respond("Unsupported event type.")
+        return respond("Unsupported event type.", status_code=200)
 
 
 def process_git_revert():
@@ -261,9 +264,8 @@ def process_git_revert():
     # "Revert "ref(snql) Update SDK to latest (#26638)""
     subject = execution.stdout.replace('"', "")
     if repo == "getsentry" and subject.startswith("getsentry/sentry@"):
-        return respond(
-            f"{sha} cannot be reverted because it needs to be reverted in Sentry"
-        )
+        body = f"{sha} cannot be reverted because it needs to be reverted in Sentry"
+        return respond(body, status_code=400)
 
     run(f"git revert --no-commit {sha}", cwd=tmp_dir)
     run(
@@ -286,9 +288,8 @@ def process_git_revert():
         push_args += " --dry-run"
     run(push_args, cwd=tmp_dir)
     revert_sha = run("git rev-parse origin/master", cwd=tmp_dir).stdout
-    return respond(
-        {"reason": f"{sha} reverted.", "revert_sha": revert_sha}, status_code=200
-    )
+    body = {"reason": f"{sha} reverted.", "revert_sha": revert_sha}
+    return respond(body, status_code=200)
 
 
 @app.route("/api/revert", methods=["POST"])
@@ -305,4 +306,4 @@ def revert():
     except CommandError as e:
         sentry_sdk.capture_exception(e)
         logger.exception(e)
-        return respond("Failed to revert.")
+        return respond("Failed to revert.", status_code=400)
