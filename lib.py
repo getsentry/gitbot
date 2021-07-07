@@ -78,6 +78,18 @@ def sync_with_upstream(checkout_path, upstream_url):
     run("git push -f origin master", cwd=checkout_path)
 
 
+def retry_push(push_cmd, cwd):
+    successful_push = False
+    for _ in range(5):
+        try:
+            run(push_cmd, cwd=cwd)
+            successful_push = True
+            break
+        except CommandError as e:
+            run(f"git pull --rebase origin {branch}", cwd=cwd)
+    return successful_push
+
+
 # Alias for updating the Sentry and Getsentry repos
 def update_primary_repo(repo):
     if repo == "sentry":

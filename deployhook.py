@@ -288,7 +288,8 @@ def process_git_revert():
     push_args = f"git push {repo_url}"
     if DRY_RUN:
         push_args += " --dry-run"
-    run(push_args, cwd=tmp_dir)
+    outcome = retry_push(push_args, tmp_dir)
+
     revert_sha = run("git rev-parse origin/master", cwd=tmp_dir).stdout
     body = {"reason": f"{sha} reverted.", "revert_sha": revert_sha}
     return respond(body, status_code=200)
