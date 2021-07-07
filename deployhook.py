@@ -103,8 +103,7 @@ def bump_version(branch, bump_args=[]):
             successful_push = True
             break
         except CommandError as e:
-            continue
-        run(f"git pull --rebase origin {branch}", cwd=repo_root)
+            run(f"git pull --rebase origin {branch}", cwd=repo_root)
 
     if not successful_push:
         return False, "Failed to push."
