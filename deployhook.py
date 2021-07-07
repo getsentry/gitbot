@@ -72,7 +72,7 @@ def respond(data, status_code):
     return jsonify(data), status_code
 
 
-def bump_version(branch, bump_args):
+def bump_version(branch, bump_args=[]):
     repo_root = tempfile.mkdtemp()
 
     # The branch has to be created manually in getsentry/getsentry!
@@ -87,7 +87,8 @@ def bump_version(branch, bump_args):
     run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
     run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
 
-    command = f"bin/bump-sentry {bump_args}"
+    # Passing it as a list to handle double quotes correctly (e.g. --author "First <email>")
+    command = ["bin/bump-sentry"] + bump_args
     run(command, cwd=repo_root)
 
     push_args = None
@@ -140,9 +141,9 @@ def process_push():
     updated = True
     reason = "Commit not relevant for deploy sync."
     if ref_sha is not None:
-        bump_args = ref_sha
+        bump_args = [ref_sha]
         if author is not None:
-            bump_args += f"--author {author}"
+            bump_args += ["--author", author]
 
         # Support Sentry fork when running on development mode
         if (IS_DEV and repo.split("/")[1] == "sentry") or (
@@ -205,7 +206,7 @@ def process_pull_request():
     branch = head["ref"]
     if ref_sha:
         # We turn red when the code did not bump
-        updated, reason = bump_version(branch, ref_sha)
+        updated, reason = bump_version(branch, [ref_sha])
         return respond(reason, status_code=200 if updated else 400)
 
     return respond("Commit not relevant for deploy sync.", status_code=200)
