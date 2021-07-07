@@ -96,15 +96,20 @@ def bump_version(branch, bump_args=[]):
         push_cmd = f"git push origin --dry-run {branch}"
     else:
         push_cmd = f"git push origin {branch}"
+    successful_push = False
     for _ in range(5):
         try:
             run(push_cmd, cwd=repo_root)
+            successful_push = True
             break
         except CommandError as e:
             continue
         run(f"git pull --rebase origin {branch}", cwd=repo_root)
 
-    return True, f"Executed: {command}"
+    if not successful_push:
+        return False, "Failed to push."
+    else:
+        return True, f"Executed: {command}"
 
 
 # Github's UI looks really bad when most responses are 400
