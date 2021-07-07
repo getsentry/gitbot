@@ -98,7 +98,7 @@ def bump_version(branch, bump_args=[]):
         push_cmd = f"git push origin {branch}"
     for _ in range(5):
         try:
-            run(push_cmd)
+            run(push_cmd, cwd=repo_root)
             break
         except CommandError as e:
             continue
