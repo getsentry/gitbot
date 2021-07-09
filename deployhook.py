@@ -72,45 +72,43 @@ def respond(data, status_code):
     return jsonify(data), status_code
 
 
-def bump_version(branch, script, *args):
+def bump_version(branch, bump_args=[]):
     repo_root = tempfile.mkdtemp()
 
-    def cmd(*args, **opts):
-        # Do not show the output of the git clone command since the PAT shows in the output
-        opts.setdefault("cwd", repo_root)
-        return subprocess.Popen(list(args), **opts).wait()
-
     # The branch has to be created manually in getsentry/getsentry!
-    if (
-        cmd(
-            "git",
-            "clone",
-            "--depth",
-            "1",
-            "-b",
-            branch,
-            GETSENTRY_REPO_WITH_PAT,
-            repo_root,
-            cwd=None,
+    try:
+        run(
+            f"git clone --depth 1 -b {branch} {GETSENTRY_REPO_WITH_PAT} {repo_root}",
+            cwd=repo_root,
         )
-        != 0
-    ):
+    except CommandError as e:
         return False, "Cannot clone branch {} from {}.".format(branch, GETSENTRY_REPO)
 
-    cmd("git", "config", "user.name", COMMITTER_NAME)
-    cmd("git", "config", "user.email", COMMITTER_EMAIL)
-    cmd(script, *args)
+    run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
+    run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
+
+    # Passing it as a list to handle double quotes correctly (e.g. --author "First <email>")
+    command = ["bin/bump-sentry"] + bump_args
+    run(command, cwd=repo_root)
+
     push_args = None
     if DRY_RUN:
-        push_args = ("git", "push", "origin", "--dry-run", branch)
+        push_cmd = f"git push origin --dry-run {branch}"
     else:
-        push_args = ("git", "push", "origin", branch)
+        push_cmd = f"git push origin {branch}"
+    successful_push = False
     for _ in range(5):
-        if cmd(*push_args) == 0:
+        try:
+            run(push_cmd, cwd=repo_root)
+            successful_push = True
             break
-        cmd("git", "pull", "--rebase", "origin", branch)
+        except CommandError as e:
+            run(f"git pull --rebase origin {branch}", cwd=repo_root)
 
-    return True, "Executed: {!r}".format([script] + list(args))
+    if not successful_push:
+        return False, "Failed to push."
+    else:
+        return True, f"Executed: {command}"
 
 
 # Github's UI looks really bad when most responses are 400
@@ -147,15 +145,15 @@ def process_push():
     updated = True
     reason = "Commit not relevant for deploy sync."
     if ref_sha is not None:
-        args = [ref_sha]
+        bump_args = [ref_sha]
         if author is not None:
-            args += ["--author", author]
+            bump_args += ["--author", author]
 
         # Support Sentry fork when running on development mode
         if (IS_DEV and repo.split("/")[1] == "sentry") or (
             repo == SENTRY_REPO_UPSTREAM
         ):
-            updated, reason = bump_version(GETSENTRY_BRANCH, "bin/bump-sentry", *args)
+            updated, reason = bump_version(GETSENTRY_BRANCH, bump_args)
             # This makes sentry-test-repo always keeping up with Sentry
             if ENV == "staging":
                 try:
@@ -212,7 +210,7 @@ def process_pull_request():
     branch = head["ref"]
     if ref_sha:
         # We turn red when the code did not bump
-        updated, reason = bump_version(branch, "bin/bump-sentry", ref_sha)
+        updated, reason = bump_version(branch, [ref_sha])
         return respond(reason, status_code=200 if updated else 400)
 
     return respond("Commit not relevant for deploy sync.", status_code=200)
