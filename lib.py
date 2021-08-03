@@ -12,8 +12,6 @@ class CommandError(Exception):
 
 
 def run(cmd: str, cwd: str = "/tmp", quiet: bool = False) -> object:
-    # XXX: The output of the clone/push commands shows the PAT
-    # GCR does not scrub the PAT. Sentry does
     new_cmd = None
     if isinstance(cmd, str):
         new_cmd = cmd.split()
@@ -24,8 +22,13 @@ def run(cmd: str, cwd: str = "/tmp", quiet: bool = False) -> object:
     elif isinstance(cmd, list):
         new_cmd = cmd
 
+    # GCR does not scrub the Personal Access Token from the output
+    scrub_output = PAT not in new_cmd
     if not quiet:
-        logger.info("> " + " ".join(new_cmd) + f" (cwd: {cwd})")
+        _command = "> " + " ".join(new_cmd) + f" (cwd: {cwd})"
+        if scrub_output:
+            _command = _command.replace(PAT, "<secret>")
+        logger.info(_command)
 
     # Capture the output so you can process it later and to show up in Sentry
     # Redirect stderr to stdout
@@ -37,7 +40,9 @@ def run(cmd: str, cwd: str = "/tmp", quiet: bool = False) -> object:
     if execution.stdout:
         for l in execution.stdout.splitlines():
             string = l.decode("utf-8")
-            output += string + "\n"
+            if scrub_output:
+                string = string.replace(PAT, "<secret>")
+            output += f"{string}\n"
             if not quiet:
                 logger.info(string)
 
@@ -49,7 +54,7 @@ def run(cmd: str, cwd: str = "/tmp", quiet: bool = False) -> object:
 
 
 def update_checkout(repo_url, checkout_path):
-    logger.info(f"About to clone/pull {repo_url} to {checkout_path}.")
+    logger.info(f"About to clone/pull to {checkout_path}.")
     if not os.path.exists(checkout_path):
         # We clone before the app is running. Requests will clone from this checkout
         run(f"git clone {repo_url} {checkout_path}")
