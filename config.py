@@ -41,7 +41,7 @@ if not PAT and not os.environ.get("FAST_STARTUP"):
     client = secretmanager.SecretManagerServiceClient()
     # GCP project in which to store secrets in Secret Manager.
     PAT = fetch_secret(
-        client, "projects/sentry-dev-tooling/secrets/GitbotPat/versions/1"
+        client, "projects/sentry-dev-tooling/secrets/GitbotPat/versions/2"
     )
     version = 4 if ENV != "production" else 2
     GITHUB_WEBHOOK_SECRET = fetch_secret(
