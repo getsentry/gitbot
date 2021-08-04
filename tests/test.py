@@ -1,5 +1,5 @@
 # Generic name since the names of the source code is needs some refactoring first
-from deployhook import extract_author
+from ..deployhook import extract_author
 
 event = {
     "after": "40b0be642943c36cf602c5bd072fdc937ba7d687",
@@ -64,4 +64,4 @@ event = {
 
 def test_extract_author():
     author = extract_author({"author": "foo"})
-    assert author == ""
+    assert author == "AniketDas <>"
