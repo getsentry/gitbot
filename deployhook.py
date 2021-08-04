@@ -111,6 +111,18 @@ def bump_version(branch, bump_args=[]):
         return True, f"Executed: {command}"
 
 
+# 'Aniket Das "Tekky <85517732+AniketDas-Tekky@users.noreply.github.com>'
+def extract_author(data):
+    author_data = data.get("head_commit", {}).get("author", {})
+    author_name = author_data.get("name")
+    author_email = author_data.get("email")
+    if author_name and author_email:
+        author = f"{author_name} <{author_email}>"
+    else:
+        author = None
+    return author
+
+
 # Github's UI looks really bad when most responses are 400
 # Let's only turn it red when something actually goes bad
 def process_push():
@@ -134,13 +146,7 @@ def process_push():
     ref_sha = head_commit.get("id")
 
     # Original author will be displayed as author in getsentry/getsentry
-    author_data = head_commit.get("author", {})
-    author_name = author_data.get("name")
-    author_email = author_data.get("email")
-    if author_name and author_email:
-        author = f"{author_name} <{author_email}>"
-    else:
-        author = None
+    author = extract_author(data)
 
     updated = True
     reason = "Commit not relevant for deploy sync."
