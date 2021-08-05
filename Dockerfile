@@ -14,7 +14,7 @@ COPY requirements.txt /app/
 RUN pip install -r requirements.txt
 
 # Source code
-COPY gitbot/ /app/
+COPY gitbot/ /app/gitbot/
 
 # 1 worker, 4 worker threads should be more than enough.
 # --worker-class gthread is automatically set if --threads > 1.
@@ -26,4 +26,4 @@ COPY gitbot/ /app/
 # "Workers silent for more than this many seconds are killed and restarted."
 
 # If things get bad you might want to --max-requests, --max-requests-jitter, --workers 2.
-CMD ["gunicorn", "--bind", ":8080", "--workers", "1", "--threads", "4", "--timeout", "0", "gitbot/deployhook:app"]
+CMD ["gunicorn", "--bind", ":8080", "--workers", "1", "--threads", "4", "--timeout", "0", "gitbot.deployhook:app"]
