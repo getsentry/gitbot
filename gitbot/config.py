@@ -30,8 +30,8 @@ IS_DEV = ENV == "development"
 PAT = os.environ.get("GITBOT_PAT")
 GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 GITBOT_API_SECRET = os.environ.get("GITBOT_API_SECRET")
-# On GCR we use Google secrets to fetch the PAT
-if not PAT and not os.environ.get("FAST_STARTUP"):
+# On GCR we use Google secrets to fetch the PAT; K_SERVICE is a reserved variable for Cloud services
+if os.environ.get("K_SERVICE") and not os.environ.get("FAST_STARTUP"):
     # Loading the module here is useful in systems that the package cannot install (e.g. Apple M1)
     from google.cloud import secretmanager
 
