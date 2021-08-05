@@ -1,7 +1,8 @@
 import logging
+import os
 import subprocess
 
-from config import *
+from gitbot.config import LOGGING_LEVEL, PAT
 
 logger = logging.getLogger(__name__)
 logger.setLevel(LOGGING_LEVEL)
@@ -83,9 +84,15 @@ def sync_with_upstream(checkout_path, upstream_url):
     run("git push -f origin master", cwd=checkout_path)
 
 
-# Alias for updating the Sentry and Getsentry repos
-def update_primary_repo(repo):
-    if repo == "sentry":
-        update_checkout(SENTRY_REPO_WITH_PAT, SENTRY_CHECKOUT_PATH)
+def extract_author(data):
+    author_data = data.get("head_commit", {}).get("author", {})
+    # Drop quote
+    # Aniket Das "Tekky <85517732+AniketDas-Tekky@users.noreply.github.com>
+    # Aniket Das Tekky <85517732+AniketDas-Tekky@users.noreply.github.com>
+    author_name = author_data.get("name").replace('"', "")
+    author_email = author_data.get("email")
+    if author_name and author_email:
+        author = f"{author_name} <{author_email}>"
     else:
-        update_checkout(GETSENTRY_REPO_WITH_PAT, GETSENTRY_CHECKOUT_PATH)
+        author = None
+    return author

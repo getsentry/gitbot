@@ -23,6 +23,7 @@ services:
     command: flask run
     volumes:
       - .:/app
+      # This is necessary in order to allow for checkouts outside of the container
       - /tmp:/tmp
     ports:
       - "5000:5000"

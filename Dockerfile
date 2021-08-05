@@ -14,9 +14,7 @@ COPY requirements.txt /app/
 RUN pip install -r requirements.txt
 
 # Source code
-COPY deployhook.py /app/
-COPY config.py /app/
-COPY lib.py /app/
+COPY src/ /app/
 
 # 1 worker, 4 worker threads should be more than enough.
 # --worker-class gthread is automatically set if --threads > 1.
@@ -28,4 +26,4 @@ COPY lib.py /app/
 # "Workers silent for more than this many seconds are killed and restarted."
 
 # If things get bad you might want to --max-requests, --max-requests-jitter, --workers 2.
-CMD ["gunicorn", "--bind", ":8080", "--workers", "1", "--threads", "4", "--timeout", "0", "deployhook:app"]
+CMD ["gunicorn", "--bind", ":8080", "--workers", "1", "--threads", "4", "--timeout", "0", "src/deployhook:app"]

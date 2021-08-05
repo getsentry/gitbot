@@ -2,7 +2,6 @@ import hmac
 import hashlib
 import logging
 import tempfile
-import subprocess
 from operator import itemgetter
 
 import sentry_sdk
@@ -10,8 +9,8 @@ import sentry_sdk
 from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-from config import *
-from lib import *
+from gitbot.config import *
+from gitbot.lib import *
 
 logging.basicConfig(
     level=LOGGING_LEVEL,
@@ -48,6 +47,15 @@ else:
 
 os.environ["EMAIL"] = COMMITTER_EMAIL
 os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
+
+# Alias for updating the Sentry and Getsentry repos
+def update_primary_repo(repo):
+    if repo == "sentry":
+        update_checkout(SENTRY_REPO_WITH_PAT, SENTRY_CHECKOUT_PATH)
+    else:
+        update_checkout(GETSENTRY_REPO_WITH_PAT, GETSENTRY_CHECKOUT_PATH)
+
+
 # This clones/updates the primary repos under /tmp
 if not os.environ.get("FAST_STARTUP"):
     update_primary_repo("sentry")
@@ -91,7 +99,6 @@ def bump_version(branch, bump_args=[]):
     command = ["bin/bump-sentry"] + bump_args
     run(command, cwd=repo_root)
 
-    push_args = None
     if DRY_RUN:
         push_cmd = f"git push origin --dry-run {branch}"
     else:
@@ -102,25 +109,13 @@ def bump_version(branch, bump_args=[]):
             run(push_cmd, cwd=repo_root)
             successful_push = True
             break
-        except CommandError as e:
+        except CommandError:
             run(f"git pull --rebase origin {branch}", cwd=repo_root)
 
     if not successful_push:
         return False, "Failed to push."
     else:
         return True, f"Executed: {command}"
-
-
-# 'Aniket Das "Tekky <85517732+AniketDas-Tekky@users.noreply.github.com>'
-def extract_author(data):
-    author_data = data.get("head_commit", {}).get("author", {})
-    author_name = author_data.get("name")
-    author_email = author_data.get("email")
-    if author_name and author_email:
-        author = f"{author_name} <{author_email}>"
-    else:
-        author = None
-    return author
 
 
 # Github's UI looks really bad when most responses are 400
@@ -142,10 +137,8 @@ def process_push():
         return respond("Commit against untracked branch.", status_code=200)
 
     repo = data["repository"]["full_name"]
-    head_commit = data.get("head_commit", {})
-    ref_sha = head_commit.get("id")
-
-    # Original author will be displayed as author in getsentry/getsentry
+    ref_sha = data.get("head_commit", {}).get("id")
+    # Original author will be displayed as author in getsentry/getsentry commits
     author = extract_author(data)
 
     updated = True
