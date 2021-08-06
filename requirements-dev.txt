@@ -1,3 +1,4 @@
 click==8.0.1
-requests==2.25.1
+flake8==3.9.2
 pytest==6.2.4
+requests==2.25.1
