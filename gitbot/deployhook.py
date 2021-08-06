@@ -1,6 +1,7 @@
 import hmac
 import hashlib
 import logging
+import os
 import tempfile
 from operator import itemgetter
 
@@ -48,6 +49,7 @@ else:
 os.environ["EMAIL"] = COMMITTER_EMAIL
 os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
 
+
 # Alias for updating the Sentry and Getsentry repos
 def update_primary_repo(repo):
     if repo == "sentry":
@@ -89,7 +91,7 @@ def bump_version(branch, bump_args=[]):
             f"git clone --depth 1 -b {branch} {GETSENTRY_REPO_WITH_PAT} {repo_root}",
             cwd=repo_root,
         )
-    except CommandError as e:
+    except CommandError:
         return False, "Cannot clone branch {} from {}.".format(branch, GETSENTRY_REPO)
 
     run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
@@ -194,7 +196,7 @@ def process_pull_request():
 
         if (
             head["repo"]["full_name"] != SENTRY_REPO_UPSTREAM
-            or base["repo"]["full_name"] != SENTRY_REPO_UPSTREAM
+            or base["repo"]["full_name"] != SENTRY_REPO_UPSTREAM  # noqa: W503
         ):
             return respond("Invalid head or base repos.", status_code=200)
 

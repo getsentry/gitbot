@@ -39,8 +39,8 @@ def run(cmd: str, cwd: str = "/tmp", quiet: bool = False) -> object:
 
     output = ""
     if execution.stdout:
-        for l in execution.stdout.splitlines():
-            string = l.decode("utf-8")
+        for line in execution.stdout.splitlines():
+            string = line.decode("utf-8")
             if scrub_output:
                 string = string.replace(PAT, "<secret>")
             output += f"{string}\n"
@@ -65,7 +65,7 @@ def update_checkout(repo_url, checkout_path):
     # In case it was left in a bad state
     run("git fetch origin master", cwd=checkout_path)
     run("git reset --hard origin/master", cwd=checkout_path)
-    run(f"git pull origin master", cwd=checkout_path)
+    run("git pull origin master", cwd=checkout_path)
 
 
 def sync_with_upstream(checkout_path, upstream_url):
