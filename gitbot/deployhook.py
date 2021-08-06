@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 import tempfile
+from shlex import quote
 from operator import itemgetter
 
 import sentry_sdk
@@ -86,7 +87,7 @@ def bump_command(ref_sha, author=""):
     cmd = f"bin/bump-sentry {ref_sha}"
     # Original author will be displayed as author in getsentry/getsentry commits
     if author is not None:
-        cmd += "--author {author}"
+        cmd += "--author " + quote(author)
     return cmd
 
 
@@ -105,9 +106,7 @@ def bump_version(branch, ref_sha, author):
     run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
     run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
 
-    # Passing it as a list to handle double quotes correctly (e.g. --author "First <email>")
-    command = bump_command()
-    run(command, cwd=repo_root)
+    run(bump_command(ref_sha, author), cwd=repo_root)
 
     if DRY_RUN:
         push_cmd = f"git push origin --dry-run {branch}"

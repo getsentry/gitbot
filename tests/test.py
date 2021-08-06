@@ -17,3 +17,7 @@ def test_extract_author():
     assert (
         author == "Aniket Das Tekky <85517732+AniketDas-Tekky@users.noreply.github.com>"
     )
+
+
+def test_bump_command():
+    bump_command("master", extract_author(event))
