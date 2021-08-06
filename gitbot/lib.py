@@ -2,6 +2,8 @@ import logging
 import os
 import subprocess
 
+# from shlex import escape
+
 from gitbot.config import LOGGING_LEVEL, PAT
 
 logger = logging.getLogger(__name__)
@@ -12,7 +14,7 @@ class CommandError(Exception):
     pass
 
 
-def run(cmd: str, cwd: str = "/tmp", quiet: bool = False) -> object:
+def run(cmd, cwd: str = "/tmp", quiet: bool = False) -> object:
     new_cmd = None
     if isinstance(cmd, str):
         new_cmd = cmd.split()
@@ -93,3 +95,13 @@ def extract_author(data):
     else:
         author = None
     return author
+
+
+def bump_command(ref_sha, author=""):
+    cmd = ["bin/bump-sentry", ref_sha]
+    # Original author will be displayed as author in getsentry/getsentry commits
+    if author is not None:
+        # fmt: off
+        cmd += ["--author", author.replace('"', '\"')]
+        # fmt: on
+    return cmd

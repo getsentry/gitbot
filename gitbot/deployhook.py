@@ -3,7 +3,6 @@ import hashlib
 import logging
 import os
 import tempfile
-from shlex import quote
 from operator import itemgetter
 
 import sentry_sdk
@@ -83,14 +82,6 @@ def respond(data, status_code):
     return jsonify(data), status_code
 
 
-def bump_command(ref_sha, author=""):
-    cmd = f"bin/bump-sentry {ref_sha}"
-    # Original author will be displayed as author in getsentry/getsentry commits
-    if author is not None:
-        cmd += "--author " + quote(author)
-    return cmd
-
-
 def bump_version(branch, ref_sha, author):
     repo_root = tempfile.mkdtemp()
 
@@ -106,7 +97,8 @@ def bump_version(branch, ref_sha, author):
     run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
     run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
 
-    run(bump_command(ref_sha, author), cwd=repo_root)
+    command = bump_command(ref_sha, author)
+    run(command, cwd=repo_root)
 
     if DRY_RUN:
         push_cmd = f"git push origin --dry-run {branch}"
