@@ -82,7 +82,15 @@ def respond(data, status_code):
     return jsonify(data), status_code
 
 
-def bump_version(branch, bump_args=[]):
+def bump_command(ref_sha, author=""):
+    cmd = f"bin/bump-sentry {ref_sha}"
+    # Original author will be displayed as author in getsentry/getsentry commits
+    if author is not None:
+        cmd += "--author {author}"
+    return cmd
+
+
+def bump_version(branch, ref_sha, author):
     repo_root = tempfile.mkdtemp()
 
     # The branch has to be created manually in getsentry/getsentry!
@@ -98,7 +106,7 @@ def bump_version(branch, bump_args=[]):
     run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
 
     # Passing it as a list to handle double quotes correctly (e.g. --author "First <email>")
-    command = ["bin/bump-sentry"] + bump_args
+    command = bump_command()
     run(command, cwd=repo_root)
 
     if DRY_RUN:
@@ -140,21 +148,17 @@ def process_push():
 
     repo = data["repository"]["full_name"]
     ref_sha = data.get("head_commit", {}).get("id")
-    # Original author will be displayed as author in getsentry/getsentry commits
-    author = extract_author(data)
 
     updated = True
     reason = "Commit not relevant for deploy sync."
     if ref_sha is not None:
-        bump_args = [ref_sha]
-        if author is not None:
-            bump_args += ["--author", author]
-
         # Support Sentry fork when running on development mode
         if (IS_DEV and repo.split("/")[1] == "sentry") or (
             repo == SENTRY_REPO_UPSTREAM
         ):
-            updated, reason = bump_version(GETSENTRY_BRANCH, bump_args)
+            updated, reason = bump_version(
+                GETSENTRY_BRANCH, ref_sha, extract_author(data)
+            )
             # This makes sentry-test-repo always keeping up with Sentry
             if ENV == "staging":
                 try:

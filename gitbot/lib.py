@@ -86,10 +86,7 @@ def sync_with_upstream(checkout_path, upstream_url):
 
 def extract_author(data):
     author_data = data.get("head_commit", {}).get("author", {})
-    # Drop quote
-    # Aniket Das "Tekky <85517732+AniketDas-Tekky@users.noreply.github.com>
-    # Aniket Das Tekky <85517732+AniketDas-Tekky@users.noreply.github.com>
-    author_name = author_data.get("name").replace('"', "")
+    author_name = author_data.get("name")
     author_email = author_data.get("email")
     if author_name and author_email:
         author = f"{author_name} <{author_email}>"
