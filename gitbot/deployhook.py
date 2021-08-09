@@ -82,7 +82,7 @@ def respond(data, status_code):
     return jsonify(data), status_code
 
 
-def bump_version(branch, ref_sha, author):
+def bump_version(branch, ref_sha, author=None):
     repo_root = tempfile.mkdtemp()
 
     # The branch has to be created manually in getsentry/getsentry!
@@ -206,7 +206,7 @@ def process_pull_request():
     branch = head["ref"]
     if ref_sha:
         # We turn red when the code did not bump
-        updated, reason = bump_version(branch, [ref_sha])
+        updated, reason = bump_version(branch, ref_sha)
         return respond(reason, status_code=200 if updated else 400)
 
     return respond("Commit not relevant for deploy sync.", status_code=200)
