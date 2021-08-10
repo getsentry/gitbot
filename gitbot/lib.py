@@ -2,8 +2,6 @@ import logging
 import os
 import subprocess
 
-# from shlex import escape
-
 from gitbot.config import LOGGING_LEVEL, PAT
 
 logger = logging.getLogger(__name__)
