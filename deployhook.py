@@ -2,7 +2,6 @@ import hmac
 import hashlib
 import logging
 import tempfile
-import subprocess
 from operator import itemgetter
 
 import sentry_sdk
@@ -81,7 +80,7 @@ def bump_version(branch, bump_args=[]):
             f"git clone --depth 1 -b {branch} {GETSENTRY_REPO_WITH_PAT} {repo_root}",
             cwd=repo_root,
         )
-    except CommandError as e:
+    except CommandError:
         return False, "Cannot clone branch {} from {}.".format(branch, GETSENTRY_REPO)
 
     run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
@@ -91,7 +90,6 @@ def bump_version(branch, bump_args=[]):
     command = ["bin/bump-sentry"] + bump_args
     run(command, cwd=repo_root)
 
-    push_args = None
     if DRY_RUN:
         push_cmd = f"git push origin --dry-run {branch}"
     else:
@@ -102,7 +100,7 @@ def bump_version(branch, bump_args=[]):
             run(push_cmd, cwd=repo_root)
             successful_push = True
             break
-        except CommandError as e:
+        except CommandError:
             run(f"git pull --rebase origin {branch}", cwd=repo_root)
 
     if not successful_push:
@@ -160,7 +158,7 @@ def process_push():
                     sync_with_upstream(
                         SENTRY_CHECKOUT_PATH, repo_url_with_pat("getsentry/sentry")
                     )
-                except Exception as e:
+                except Exception:
                     logger.warn(
                         "We failed to sync Sentry with Sentry Test Repo (We will keep going)"
                     )
@@ -195,7 +193,7 @@ def process_pull_request():
 
         if (
             head["repo"]["full_name"] != SENTRY_REPO_UPSTREAM
-            or base["repo"]["full_name"] != SENTRY_REPO_UPSTREAM
+            or base["repo"]["full_name"] != SENTRY_REPO_UPSTREAM  # noqa: W503
         ):
             return respond("Invalid head or base repos.", status_code=200)
 
