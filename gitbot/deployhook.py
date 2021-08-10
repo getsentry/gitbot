@@ -156,7 +156,7 @@ def process_push():
                     sync_with_upstream(
                         SENTRY_CHECKOUT_PATH, repo_url_with_pat("getsentry/sentry")
                     )
-                except Exception as e:
+                except Exception:
                     logger.warn(
                         "We failed to sync Sentry with Sentry Test Repo (We will keep going)"
                     )

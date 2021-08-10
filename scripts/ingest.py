@@ -44,7 +44,13 @@ def bump_payload_header(sha: str, author: str, email: str):
     payload = {
         "ref": "refs/heads/master",
         "repository": {"full_name": "getsentry/sentry"},
-        "head_commit": {"id": sha, "author": {"name": author, "email": email}},
+        "head_commit": {
+            "id": sha,
+            "author": {
+                "name": author,
+                "email": email,
+            },
+        },
     }
     header = {}
     if GITHUB_WEBHOOK_SECRET:
