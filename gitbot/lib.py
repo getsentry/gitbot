@@ -1,7 +1,8 @@
 import logging
+import os
 import subprocess
 
-from config import *
+from gitbot.config import LOGGING_LEVEL, PAT
 
 logger = logging.getLogger(__name__)
 logger.setLevel(LOGGING_LEVEL)
@@ -11,7 +12,7 @@ class CommandError(Exception):
     pass
 
 
-def run(cmd: str, cwd: str = "/tmp", quiet: bool = False) -> object:
+def run(cmd, cwd: str = "/tmp", quiet: bool = False) -> object:
     new_cmd = None
     if isinstance(cmd, str):
         new_cmd = cmd.split()
@@ -83,9 +84,22 @@ def sync_with_upstream(checkout_path, upstream_url):
     run("git push -f origin master", cwd=checkout_path)
 
 
-# Alias for updating the Sentry and Getsentry repos
-def update_primary_repo(repo):
-    if repo == "sentry":
-        update_checkout(SENTRY_REPO_WITH_PAT, SENTRY_CHECKOUT_PATH)
+def extract_author(data):
+    author_data = data.get("head_commit", {}).get("author", {})
+    author_name = author_data.get("name")
+    author_email = author_data.get("email")
+    if author_name and author_email:
+        author = f"{author_name} <{author_email}>"
     else:
-        update_checkout(GETSENTRY_REPO_WITH_PAT, GETSENTRY_CHECKOUT_PATH)
+        author = None
+    return author
+
+
+def bump_command(ref_sha, author=""):
+    cmd = ["bin/bump-sentry", ref_sha]
+    # Original author will be displayed as author in getsentry/getsentry commits
+    if author is not None:
+        # fmt: off
+        cmd += ["--author", author.replace('"', '\"')]
+        # fmt: on
+    return cmd

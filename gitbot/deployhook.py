@@ -1,6 +1,7 @@
 import hmac
 import hashlib
 import logging
+import os
 import tempfile
 from operator import itemgetter
 
@@ -9,8 +10,8 @@ import sentry_sdk
 from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-from config import *
-from lib import *
+from gitbot.config import *
+from gitbot.lib import *
 
 logging.basicConfig(
     level=LOGGING_LEVEL,
@@ -47,6 +48,16 @@ else:
 
 os.environ["EMAIL"] = COMMITTER_EMAIL
 os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
+
+
+# Alias for updating the Sentry and Getsentry repos
+def update_primary_repo(repo):
+    if repo == "sentry":
+        update_checkout(SENTRY_REPO_WITH_PAT, SENTRY_CHECKOUT_PATH)
+    else:
+        update_checkout(GETSENTRY_REPO_WITH_PAT, GETSENTRY_CHECKOUT_PATH)
+
+
 # This clones/updates the primary repos under /tmp
 if not os.environ.get("FAST_STARTUP"):
     update_primary_repo("sentry")
@@ -71,7 +82,7 @@ def respond(data, status_code):
     return jsonify(data), status_code
 
 
-def bump_version(branch, bump_args=[]):
+def bump_version(branch, ref_sha, author=None):
     repo_root = tempfile.mkdtemp()
 
     # The branch has to be created manually in getsentry/getsentry!
@@ -86,8 +97,7 @@ def bump_version(branch, bump_args=[]):
     run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
     run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
 
-    # Passing it as a list to handle double quotes correctly (e.g. --author "First <email>")
-    command = ["bin/bump-sentry"] + bump_args
+    command = bump_command(ref_sha, author)
     run(command, cwd=repo_root)
 
     if DRY_RUN:
@@ -128,30 +138,18 @@ def process_push():
         return respond("Commit against untracked branch.", status_code=200)
 
     repo = data["repository"]["full_name"]
-    head_commit = data.get("head_commit", {})
-    ref_sha = head_commit.get("id")
-
-    # Original author will be displayed as author in getsentry/getsentry
-    author_data = head_commit.get("author", {})
-    author_name = author_data.get("name")
-    author_email = author_data.get("email")
-    if author_name and author_email:
-        author = f"{author_name} <{author_email}>"
-    else:
-        author = None
+    ref_sha = data.get("head_commit", {}).get("id")
 
     updated = True
     reason = "Commit not relevant for deploy sync."
     if ref_sha is not None:
-        bump_args = [ref_sha]
-        if author is not None:
-            bump_args += ["--author", author]
-
         # Support Sentry fork when running on development mode
         if (IS_DEV and repo.split("/")[1] == "sentry") or (
             repo == SENTRY_REPO_UPSTREAM
         ):
-            updated, reason = bump_version(GETSENTRY_BRANCH, bump_args)
+            updated, reason = bump_version(
+                GETSENTRY_BRANCH, ref_sha, extract_author(data)
+            )
             # This makes sentry-test-repo always keeping up with Sentry
             if ENV == "staging":
                 try:
@@ -208,7 +206,7 @@ def process_pull_request():
     branch = head["ref"]
     if ref_sha:
         # We turn red when the code did not bump
-        updated, reason = bump_version(branch, [ref_sha])
+        updated, reason = bump_version(branch, ref_sha)
         return respond(reason, status_code=200 if updated else 400)
 
     return respond("Commit not relevant for deploy sync.", status_code=200)
