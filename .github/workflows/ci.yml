@@ -23,7 +23,7 @@ jobs:
         run: |
           docker-compose up -d
           docker-compose down
-  
+
   tests:
     name: unit tests
     runs-on: ubuntu-latest
@@ -36,7 +36,7 @@ jobs:
         run: |
           pip install -U pip wheel
           pip install -r requirements.txt -r requirements-dev.txt
-      
+
       - name: Run tests
         run: |
           pytest tests/test.py
