@@ -13,41 +13,48 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from gitbot.config import *
 from gitbot.lib import *
 
-logging.basicConfig(
-    level=LOGGING_LEVEL,
-    # GCR logs already include the time
-    format="%(message)s" if ENV == "development" else "%(levelname)-8s %(message)s",
-    datefmt="%H:%M:%S",
-)
-logger = logging.getLogger(__name__)
 
-if ENV != "development":
-    logger.info(f"Environment: {ENV}")
-    sentry_sdk.init(
-        dsn="https://95cc5cfe034b4ff8b68162078978935c@o1.ingest.sentry.io/5748916",
-        integrations=[FlaskIntegration()],
-        # Set traces_sample_rate to 1.0 to capture 100%
-        # of transactions for performance monitoring.
-        # We recommend adjusting this value in production.
-        traces_sample_rate=1.0,
-        environment=ENV,
-    )
-    if not GITHUB_WEBHOOK_SECRET:
-        raise SystemError("Empty GITHUB_WEBHOOK_SECRET!")
-    if not GITBOT_API_SECRET:
-        raise SystemError("Empty GITBOT_API_SECRET!")
+def boot():
+    if ENV != "development":
+        logger.info(f"Environment: {ENV}")
+        sentry_sdk.init(
+            dsn="https://95cc5cfe034b4ff8b68162078978935c@o1.ingest.sentry.io/5748916",
+            integrations=[FlaskIntegration()],
+            # Set traces_sample_rate to 1.0 to capture 100%
+            # of transactions for performance monitoring.
+            # We recommend adjusting this value in production.
+            traces_sample_rate=1.0,
+            environment=ENV,
+        )
+        if not GITHUB_WEBHOOK_SECRET:
+            raise SystemError("Empty GITHUB_WEBHOOK_SECRET!")
+        if not GITBOT_API_SECRET:
+            raise SystemError("Empty GITBOT_API_SECRET!")
 
-# Only the production instance is allowed to push to the real repos
-# We don't want more than one instance pushing to real repo by mistake
-if ENV != "production":
-    assert SENTRY_REPO != "getsentry/sentry"
-    assert GETSENTRY_REPO != "getsentry/getsentry"
-else:
-    assert SENTRY_REPO == "getsentry/sentry"
-    assert GETSENTRY_REPO == "getsentry/getsentry"
+    # Only the production instance is allowed to push to the real repos
+    # We don't want more than one instance pushing to real repo by mistake
+    if ENV != "production":
+        assert SENTRY_REPO != "getsentry/sentry"
+        assert GETSENTRY_REPO != "getsentry/getsentry"
+    else:
+        assert SENTRY_REPO == "getsentry/sentry"
+        assert GETSENTRY_REPO == "getsentry/getsentry"
 
-os.environ["EMAIL"] = COMMITTER_EMAIL
-os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
+    os.environ["EMAIL"] = COMMITTER_EMAIL
+    os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
+
+    # This clones/updates the primary repos under /tmp
+    if not os.environ.get("FAST_STARTUP"):
+        update_primary_repo("sentry")
+        update_primary_repo("getsentry")
+
+    if DRY_RUN:
+        logger.info("Dry run mode: on")
+    else:
+        logger.info("Dry run mode: *OFF* <--!")
+        logger.info(
+            f"Code bumps will be pushed to {GETSENTRY_BRANCH} on {GETSENTRY_REPO}"
+        )
 
 
 # Alias for updating the Sentry and Getsentry repos
@@ -56,21 +63,6 @@ def update_primary_repo(repo):
         update_checkout(SENTRY_REPO_WITH_PAT, SENTRY_CHECKOUT_PATH)
     else:
         update_checkout(GETSENTRY_REPO_WITH_PAT, GETSENTRY_CHECKOUT_PATH)
-
-
-# This clones/updates the primary repos under /tmp
-if not os.environ.get("FAST_STARTUP"):
-    update_primary_repo("sentry")
-
-    update_primary_repo("getsentry")
-
-app = Flask(__name__)
-
-if DRY_RUN:
-    logger.info("Dry run mode: on")
-else:
-    logger.info("Dry run mode: *OFF* <--!")
-    logger.info(f"Code bumps will be pushed to {GETSENTRY_BRANCH} on {GETSENTRY_REPO}")
 
 
 def respond(data, status_code):
@@ -218,6 +210,21 @@ def valid_payload(secret: str, payload: str, signature: str) -> bool:
         secret.encode("utf-8"), payload, hashlib.sha1
     ).hexdigest()
     return hmac.compare_digest(payload_signature, signature)
+
+
+logging.basicConfig(
+    level=LOGGING_LEVEL,
+    # GCR logs already include the time
+    format="%(message)s" if ENV == "development" else "%(levelname)-8s %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+try:
+    boot()
+    app = Flask(__name__)
+except Exception as e:
+    sentry_sdk.capture_exception(e)
+    logger.exception(e)
 
 
 @app.route("/", methods=["POST"])
