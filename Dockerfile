@@ -14,7 +14,7 @@ COPY requirements.txt /app/
 RUN pip install -r requirements.txt
 
 # Source code
-COPY gitbot/ /app/gitbot/
+COPY gitbot/*py /app/gitbot/
 
 # 1 worker, 4 worker threads should be more than enough.
 # --worker-class gthread is automatically set if --threads > 1.

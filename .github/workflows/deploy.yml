@@ -57,13 +57,8 @@ jobs:
 
       - name: Build and Push Container
         run: |-
-          docker build \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ${{ IMAGE_BASE_URL }}:latest \
-            -t ${{ IMAGE_BASE_URL }}:$GITHUB_SHA .
-            -t ${{ IMAGE_BASE_URL }}:latest .
+          docker build -t ${{ IMAGE_BASE_URL }}:$GITHUB_SHA .
           docker push ${{ IMAGE_BASE_URL }}:$GITHUB_SHA
-          docker push ${{ IMAGE_BASE_URL }}:latest
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v0.5.0
