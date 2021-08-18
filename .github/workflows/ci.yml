@@ -34,7 +34,7 @@ jobs:
 
       - name: Test that flask starts
         run: |-
-          # This saves the initial checkout of the repos and let's the Flask app initialize quickly
+          # No need to checkout the repos just to test start up
           export FAST_STARTUP=1
           flask run
           sleep 3 && curl --request POST http://0.0.0.0:5000
@@ -46,6 +46,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.**txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install requirements
         run: |
