@@ -43,9 +43,7 @@ Testing PR syncs:
 
 Testing that it can fetch Google Secrets:
 
-- Download a key associated to the GC staging service account
-  - Place the file in your source checkout as `gcr-key.json` (it needs to be within the mount)
-- Run `docker-compose run -e GOOGLE_APPLICATION_CREDENTIALS="gcr-key.json" backend`
+- TBD
 
 **NOTE**: The GCR instance does not need to define the authentication token since it fetches it from Google Secrets. It also does not need to define the GOOGLE_APPLICATION_CREDENTIALS env variable since it has a service account associated to the service.
 
@@ -89,15 +87,7 @@ echo GITBOT_PAT=<value> > .env
 echo GITBOT_USER=<your_github_user> >> .env
 ```
 
-**NOTE**: Docker Compose reads by default variables defined in that file. This will will _not_ be included as part of the Docker image or your Github history.
-
 **NOTE**: It is super important you understand that this token will be able to commit anywhere the associated Github user can. It is encouraged you delete this token from Github (or disk) as soon as you're done doing development.
-
-You can use docker compose to help with live code reloading (since we mount a volume to have access to the latest deployhook.py):
-
-```shell
-docker-compose up --build
-```
 
 You can also use a virtualenv and execute flask in development mode:
 
@@ -126,7 +116,7 @@ python scripts/ingest.py
 
 In order to test Github changes through your local set up you need to follow these steps:
 
-- `echo "DRY_RUN=False" >> .env` and run `docker-compose up`
+- `echo "DRY_RUN=False" >> .env` and run `flask run`
   - Verify the output says dry run mode to be off and which repo it will push to
 - Set up [Ngrok](https://ngrok.io/) to redirect Github calls to your localhost
   - `ngrok http 5000` --> Grab the URL ngrok gives you (e.g. `https://6a88fe29c5cc.ngrok.io`)

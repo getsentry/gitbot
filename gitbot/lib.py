@@ -24,7 +24,7 @@ def run(cmd, cwd: str = "/tmp", quiet: bool = False) -> object:
         new_cmd = cmd
 
     # GCR does not scrub the Personal Access Token from the output
-    scrub_output = PAT not in new_cmd
+    scrub_output = PAT and PAT not in new_cmd
     if not quiet:
         _command = "> " + " ".join(new_cmd) + f" (cwd: {cwd})"
         if scrub_output:

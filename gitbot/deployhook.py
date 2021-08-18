@@ -53,15 +53,14 @@ os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
 # Alias for updating the Sentry and Getsentry repos
 def update_primary_repo(repo):
     if repo == "sentry":
-        update_checkout(SENTRY_REPO_WITH_PAT, SENTRY_CHECKOUT_PATH)
+        update_checkout(SENTRY_REPO_URL, SENTRY_CHECKOUT_PATH)
     else:
-        update_checkout(GETSENTRY_REPO_WITH_PAT, GETSENTRY_CHECKOUT_PATH)
+        update_checkout(GETSENTRY_REPO_URL, GETSENTRY_CHECKOUT_PATH)
 
 
 # This clones/updates the primary repos under /tmp
 if not os.environ.get("FAST_STARTUP"):
     update_primary_repo("sentry")
-
     update_primary_repo("getsentry")
 
 app = Flask(__name__)
