@@ -20,7 +20,6 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger(__name__)
-logger.info(f"Release: gitbot@{os.environ['RELEASE']}")
 
 if ENV != "development":
     logger.info(f"Environment: {ENV}")
