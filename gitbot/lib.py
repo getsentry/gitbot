@@ -54,18 +54,18 @@ def run(cmd, cwd: str = "/tmp", quiet: bool = False) -> object:
     return execution
 
 
-def update_checkout(repo_url, checkout_path):
+def update_checkout(repo_url, checkout_path, quiet=False):
     logger.info(f"About to clone/pull to {checkout_path}.")
     if not os.path.exists(checkout_path):
         # We clone before the app is running. Requests will clone from this checkout
-        run(f"git clone {repo_url} {checkout_path}")
+        run(f"git clone {repo_url} {checkout_path}", quiet)
         # This silences some Git hints. This is the recommended default setting
-        run("git config pull.rebase false", cwd=checkout_path)
+        run("git config pull.rebase false", cwd=checkout_path, quiet=quiet)
 
     # In case it was left in a bad state
-    run("git fetch origin master", cwd=checkout_path)
-    run("git reset --hard origin/master", cwd=checkout_path)
-    run("git pull origin master", cwd=checkout_path)
+    run("git fetch origin master", cwd=checkout_path, quiet=quiet)
+    run("git reset --hard origin/master", cwd=checkout_path, quiet=quiet)
+    run("git pull origin master", cwd=checkout_path, quiet=quiet)
 
 
 def sync_with_upstream(checkout_path, upstream_url):

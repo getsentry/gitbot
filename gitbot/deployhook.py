@@ -20,6 +20,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+logger.info(f"Release: gitbot@{os.environ['RELEASE']}")
 
 if ENV != "development":
     logger.info(f"Environment: {ENV}")
@@ -55,9 +56,9 @@ os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
 # Alias for updating the Sentry and Getsentry repos
 def update_primary_repo(repo):
     if repo == "sentry":
-        update_checkout(SENTRY_REPO_URL, SENTRY_CHECKOUT_PATH)
+        update_checkout(SENTRY_REPO_URL, SENTRY_CHECKOUT_PATH, quiet=True)
     else:
-        update_checkout(GETSENTRY_REPO_URL, GETSENTRY_CHECKOUT_PATH)
+        update_checkout(GETSENTRY_REPO_URL, GETSENTRY_CHECKOUT_PATH, quiet=True)
 
 
 # This clones/updates the primary repos under /tmp
