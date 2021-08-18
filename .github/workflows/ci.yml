@@ -27,20 +27,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install direnv
-        run: |-
-          brew install direnv
-
       - name: Install requirements
         run: |
           pip install -U pip wheel
-          pip install -r requirements.txt
+          pip install -r requirements.txt -r requirements.dev.txt
 
       - name: Test that flask starts
         run: |-
+          # No need to checkout the repos just to test start up
           export FAST_STARTUP=1
-          direnv allow
-          env | sort
           flask run
           sleep 3 && curl --request POST http://0.0.0.0:5000
 

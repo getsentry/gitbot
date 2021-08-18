@@ -96,7 +96,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install wheel
 pip install -r requirements.txt
-# There are certain variables from env.development that get loaded via direnv
+# There are certain variables from env.development that get loaded via python-dotenv
 flask run
 ```
 
