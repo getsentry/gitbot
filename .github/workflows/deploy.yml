@@ -4,8 +4,8 @@ env:
 
 on:
   push:
-    branches:
-      - master
+    # branches:
+    #   - master
     paths:
       - "gitbot"
       - "Dockerfile"
@@ -56,7 +56,8 @@ jobs:
 
       - name: Build and Push Container
         run: |-
-          docker build -t us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA .
+          RELEASE=$(./release_version.sh)
+          docker build --build-arg RELEASE="${RELEASE}" -t us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA .
           docker push us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA
 
       - name: Deploy to Cloud Run
@@ -69,7 +70,7 @@ jobs:
       - name: Sentry Release
         uses: getsentry/action-release@v1.1.5
         # We only report new releases if deployed from master
-        if: ${{ github.ref == 'refs/heads/master' }}
+        # if: ${{ github.ref == 'refs/heads/master' }}
         with:
           environment: ${{ steps.info.outputs.environment }}
         env:
