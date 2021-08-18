@@ -1,7 +1,6 @@
 name: Deploy
 env:
   PROJECT_ID: sentry-dev-tooling
-  IMAGE_BASE_URL: us.gcr.io/$PROJECT_ID/gitbot
 
 on:
   push:
@@ -57,14 +56,14 @@ jobs:
 
       - name: Build and Push Container
         run: |-
-          docker build -t ${{ IMAGE_BASE_URL }}:$GITHUB_SHA .
-          docker push ${{ IMAGE_BASE_URL }}:$GITHUB_SHA
+          docker build -t us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA .
+          docker push us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v0.5.0
         with:
           service: ${{ steps.info.outputs.service }}
-          image: ${{ env.IMAGE_BASE_URL }}:${{ github.sha }}
+          image: us.gcr.io/${{ env.PROJECT_ID }}/sentry-deploy-sync-hook:${{ github.sha }}
           region: us-central1
 
       - name: Sentry Release
