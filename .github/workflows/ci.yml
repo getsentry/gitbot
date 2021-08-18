@@ -30,7 +30,6 @@ jobs:
       - name: Install direnv
         run: |-
           brew install direnv
-          direnv allow
 
       - name: Install requirements
         run: |
@@ -40,6 +39,8 @@ jobs:
       - name: Test that flask starts
         run: |-
           export FAST_STARTUP=1
+          direnv allow
+          env | sort
           flask run
           sleep 3 && curl --request POST http://0.0.0.0:5000
 
