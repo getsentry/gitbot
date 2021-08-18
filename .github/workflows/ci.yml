@@ -19,6 +19,25 @@ jobs:
           docker run -p 8080:8080 -d -e GOOGLE_APPLICATION_CREDENTIALS -e FAST_STARTUP=1 gitbot:latest
           sleep 10 && curl --request POST http://0.0.0.0:8080
 
+  flask:
+    name: test flask starts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Docker image
+        run: |-
+          brew install direnv
+          direnv allow
+
+      - name: Test that flask starts
+        run: |-
+          export FAST_STARTUP=1
+          flask run
+          sleep 3 && curl --request POST http://0.0.0.0:5000
+
   tests:
     name: unit tests
     runs-on: ubuntu-latest
