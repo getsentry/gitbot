@@ -1,5 +1,4 @@
-from gitbot.deployhook import bump_version
-from gitbot.lib import bump_command, extract_author, run
+from gitbot.lib import bump_command, bump_version, extract_author, run
 
 CHECKOUT_ROOT_PATH = __file__.rsplit("/", 2)[0]
 
