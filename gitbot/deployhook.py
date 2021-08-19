@@ -53,9 +53,9 @@ os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
 # Alias for updating the Sentry and Getsentry repos
 def update_primary_repo(repo):
     if repo == "sentry":
-        update_checkout(SENTRY_REPO_URL, SENTRY_CHECKOUT_PATH)
+        update_checkout(SENTRY_REPO_WITH_PAT, SENTRY_CHECKOUT_PATH)
     else:
-        update_checkout(GETSENTRY_REPO_URL, GETSENTRY_CHECKOUT_PATH)
+        update_checkout(GETSENTRY_REPO_WITH_PAT, GETSENTRY_CHECKOUT_PATH)
 
 
 # This clones/updates the primary repos under /tmp
@@ -82,7 +82,7 @@ def respond(data, status_code):
     return jsonify(data), status_code
 
 
-def bump_version(branch, ref_sha, author=None, url=GETSENTRY_REPO_URL):
+def bump_version(branch, ref_sha, author=None, url=GETSENTRY_REPO_WITH_PAT):
     repo_root = tempfile.mkdtemp()
 
     # The branch has to be created manually in getsentry/getsentry!
@@ -154,7 +154,7 @@ def process_push():
             if ENV == "staging":
                 try:
                     sync_with_upstream(
-                        SENTRY_CHECKOUT_PATH, repo_url("getsentry/sentry")
+                        SENTRY_CHECKOUT_PATH, repo_url_with_pat("getsentry/sentry")
                     )
                 except Exception as e:
                     logger.warn(
@@ -246,12 +246,14 @@ def process_git_revert():
     logger.info(f"{name} has requested to revert {sha} from {repo}")
 
     tmp_dir = tempfile.mkdtemp()
-    repo_url = SENTRY_REPO_URL if repo == "sentry" else GETSENTRY_REPO_URL
+    repo_url_with_pat = (
+        SENTRY_REPO_WITH_PAT if repo == "sentry" else GETSENTRY_REPO_WITH_PAT
+    )
     checkout = SENTRY_CHECKOUT_PATH if repo == "sentry" else GETSENTRY_CHECKOUT_PATH
 
     # If there were multiple revert requests very close to each other there's a chance
     # that more than one `git pull` would be executed at the same time
-    update_checkout(repo_url, checkout)
+    update_checkout(repo_url_with_pat, checkout)
 
     # This avoids mutating the primary repo
     run(f"git clone {checkout} {tmp_dir}")
@@ -279,7 +281,7 @@ def process_git_revert():
     )
 
     # Since we cloned from a local checkout we need to make sure to push to the remote repo
-    push_args = f"git push {repo_url}"
+    push_args = f"git push {repo_url_with_pat}"
     if DRY_RUN:
         push_args += " --dry-run"
     run(push_args, cwd=tmp_dir)
