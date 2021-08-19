@@ -246,14 +246,12 @@ def process_git_revert():
     logger.info(f"{name} has requested to revert {sha} from {repo}")
 
     tmp_dir = tempfile.mkdtemp()
-    repo_url_with_pat = (
-        SENTRY_REPO_WITH_PAT if repo == "sentry" else GETSENTRY_REPO_WITH_PAT
-    )
+    repo_url = SENTRY_REPO_WITH_PAT if repo == "sentry" else GETSENTRY_REPO_WITH_PAT
     checkout = SENTRY_CHECKOUT_PATH if repo == "sentry" else GETSENTRY_CHECKOUT_PATH
 
     # If there were multiple revert requests very close to each other there's a chance
     # that more than one `git pull` would be executed at the same time
-    update_checkout(repo_url_with_pat, checkout)
+    update_checkout(repo_url, checkout)
 
     # This avoids mutating the primary repo
     run(f"git clone {checkout} {tmp_dir}")
@@ -281,7 +279,7 @@ def process_git_revert():
     )
 
     # Since we cloned from a local checkout we need to make sure to push to the remote repo
-    push_args = f"git push {repo_url_with_pat}"
+    push_args = f"git push {repo_url}"
     if DRY_RUN:
         push_args += " --dry-run"
     run(push_args, cwd=tmp_dir)
