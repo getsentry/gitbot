@@ -36,7 +36,7 @@ jobs:
         run: |-
           # No need to checkout the repos just to test start up
           export FAST_STARTUP=1
-          flask run
+          nohup flask run &
           sleep 3 && curl --request POST http://0.0.0.0:5000
 
   tests:
