@@ -30,7 +30,7 @@ class TestBump:
         ]
 
     def test_bump_version(self, tmpdir):
-        ref_sha = run("git rev-parse --short HEAD", cwd=CHECKOUT_ROOT_PATH).stdout
+        # ref_sha = run("git rev-parse --short HEAD", cwd=CHECKOUT_ROOT_PATH).stdout
         new_checkout = tmpdir
         run(f"git clone --depth 1 {CHECKOUT_ROOT_PATH} {new_checkout}")
-        bump_version("master", ref_sha, extract_author(event))
+        bump_version("master", "master", extract_author(event), url=new_checkout)

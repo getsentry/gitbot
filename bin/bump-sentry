@@ -12,6 +12,7 @@ def main(sha, commit=True, author=None):
     conn = http.client.HTTPSConnection("raw.githubusercontent.com")
     conn.request("GET", f"/getsentry/sentry/{sha}/requirements-base.txt")
     resp = conn.getresponse()
+
     if resp.status != 200:
         sys.exit(
             f"Failed to fetch sentry's requirements-base.txt for {sha} - is this a valid SHA?"
