@@ -28,7 +28,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Where to deploy
+      - name: Metadata
         id: info
         run: |-
           if [ ${{ github.event.inputs.environment }} == 'production' ]; then
@@ -42,30 +42,34 @@ jobs:
             echo "::set-output name=service::sentry-deploy-sync-hook-staging"
             echo "::set-output name=environment::staging"
           fi
-
-      - name: Setup Cloud SDK
-        uses: google-github-actions/setup-gcloud@v0.2.1
-        with:
-          project_id: ${{ env.PROJECT_ID }}
-          service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-          export_default_credentials: true # Set to true to authenticate the Cloud Run action
-
-      # This gives the ability to push to the Google Registry
-      - name: Authorize Docker push
-        run: gcloud auth configure-docker
-
-      - name: Build and Push Container
-        run: |-
           RELEASE=$(./release_version.sh)
-          docker build --build-arg RELEASE="${RELEASE}" -t us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA .
-          docker push us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA
+          echo "::set-output name=release::${RELEASE}"
+          echo $RELEASE
 
-      - name: Deploy to Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v0.5.0
-        with:
-          service: ${{ steps.info.outputs.service }}
-          image: us.gcr.io/${{ env.PROJECT_ID }}/sentry-deploy-sync-hook:${{ github.sha }}
-          region: us-central1
+      # - name: Setup Cloud SDK
+      #   uses: google-github-actions/setup-gcloud@v0.2.1
+      #   with:
+      #     project_id: ${{ env.PROJECT_ID }}
+      #     service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+      #     export_default_credentials: true # Set to true to authenticate the Cloud Run action
+
+      # # This gives the ability to push to the Google Registry
+      # - name: Authorize Docker push
+      #   run: gcloud auth configure-docker
+
+      # - name: Build and Push Container
+      #   env:
+      #     RELEASE: ${{ steps.info.outputs.service }}
+      #   run: |-
+      #     docker build --build-arg RELEASE="${RELEASE}" -t us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA .
+      #     docker push us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA
+
+      # - name: Deploy to Cloud Run
+      #   uses: google-github-actions/deploy-cloudrun@v0.5.0
+      #   with:
+      #     service: ${{ steps.info.outputs.service }}
+      #     image: us.gcr.io/${{ env.PROJECT_ID }}/sentry-deploy-sync-hook:${{ github.sha }}
+      #     region: us-central1
 
       - name: Sentry Release
         uses: getsentry/action-release@v1.1.5
@@ -73,6 +77,7 @@ jobs:
         # if: ${{ github.ref == 'refs/heads/master' }}
         with:
           environment: ${{ steps.info.outputs.environment }}
+          version: ${{ steps.info.outputs.service }}
         env:
           SENTRY_ORG: sentry
           SENTRY_PROJECT: gitbot
