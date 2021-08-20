@@ -81,13 +81,13 @@ def respond(data, status_code):
     return jsonify(data), status_code
 
 
-def bump_version(branch, ref_sha, author=None, url=GETSENTRY_REPO_URL):
+def bump_version(branch, ref_sha, author=None):
     repo_root = tempfile.mkdtemp()
 
     # The branch has to be created manually in getsentry/getsentry!
     try:
         run(
-            f"git clone --depth 1 -b {branch} {url} {repo_root}",
+            f"git clone --depth 1 -b {branch} {GETSENTRY_REPO_URL} {repo_root}",
             cwd=repo_root,
         )
     except CommandError:
