@@ -19,10 +19,25 @@ jobs:
           docker run -p 8080:8080 -d -e GOOGLE_APPLICATION_CREDENTIALS -e FAST_STARTUP=1 gitbot:latest
           sleep 10 && curl --request POST http://0.0.0.0:8080
 
-      - name: Test local dev starts up
+  flask:
+    name: test flask starts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install requirements
         run: |
-          docker-compose up -d
-          docker-compose down
+          pip install -U pip wheel
+          pip install -r requirements.txt -r requirements.dev.txt
+
+      - name: Test that flask starts
+        run: |-
+          # This saves the initial checkout of the repos and let's the Flask app initialize quickly
+          export FAST_STARTUP=1
+          nohup flask run &
+          sleep 3 && curl --request POST http://0.0.0.0:5000
 
   tests:
     name: unit tests
@@ -35,7 +50,7 @@ jobs:
       - name: Install requirements
         run: |
           pip install -U pip wheel
-          pip install -r requirements.txt -r requirements-dev.txt
+          pip install -r requirements.txt -r requirements.dev.txt
 
       - name: Run tests
         run: |

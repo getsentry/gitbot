@@ -12,8 +12,11 @@ def fetch_secret(client: str, uri: str) -> str:
     return client.access_secret_version(name=uri).payload.data.decode("UTF-8")
 
 
-def repo_url_with_pat(repo):
-    return f"https://{os.environ.get('GITBOT_USER', 'getsentry-bot')}:{PAT}@github.com/{repo}"
+def repo_url(repo):
+    if PAT:
+        return f"https://{os.environ.get('GITBOT_USER', 'getsentry-bot')}:{PAT}@github.com/{repo}"
+    else:
+        return f"git@github.com:/{repo}"
 
 
 COMMITTER_NAME = "Sentry Bot"
@@ -57,8 +60,8 @@ if os.environ.get("K_SERVICE") and not os.environ.get("FAST_STARTUP"):
 GETSENTRY_BRANCH = "master"
 GETSENTRY_CHECKOUT_PATH = "/tmp/getsentry"
 GETSENTRY_REPO = os.environ.get("GETSENTRY_REPO", "getsentry/getsentry-test-repo")
-GETSENTRY_REPO_WITH_PAT = repo_url_with_pat(GETSENTRY_REPO)
+GETSENTRY_REPO_URL = repo_url(GETSENTRY_REPO)
 SENTRY_CHECKOUT_PATH = "/tmp/sentry"
 SENTRY_REPO = os.environ.get("SENTRY_REPO", "getsentry/sentry-test-repo")
 SENTRY_REPO_UPSTREAM = os.environ.get("SENTRY_REPO_UPSTREAM", "getsentry/sentry")
-SENTRY_REPO_WITH_PAT = repo_url_with_pat(SENTRY_REPO)
+SENTRY_REPO_URL = repo_url(SENTRY_REPO)
