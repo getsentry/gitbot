@@ -1,0 +1,6 @@
+black==21.7b0
+click==8.0.1
+flake8==3.9.2
+pytest==6.2.4
+python-dotenv==0.19.0
+requests==2.25.1

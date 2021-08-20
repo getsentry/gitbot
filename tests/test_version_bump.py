@@ -1,4 +1,3 @@
-# Generic name since the names of the source code is needs some refactoring first
 from gitbot.lib import bump_command, extract_author
 
 event = {
