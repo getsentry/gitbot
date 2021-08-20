@@ -1,4 +1,4 @@
-from gitbot.lib import bump_command, bump_version, extract_author, run
+from gitbot.lib import bump_command, extract_author
 
 CHECKOUT_ROOT_PATH = __file__.rsplit("/", 2)[0]
 
@@ -19,17 +19,10 @@ expected_author = (
 # fmt: on
 
 
-class TestBump:
-    def test_bump_command(self):
-        assert bump_command("master", extract_author(event)) == [
-            "bin/bump-sentry",
-            "master",
-            "--author",
-            expected_author,
-        ]
-
-    # XXX: Move the checking out of the repo into a fixture
-    def test_bump_version(self, tmpdir):
-        new_checkout = tmpdir
-        run(f"git clone --depth 1 {CHECKOUT_ROOT_PATH} {new_checkout}")
-        bump_version("master", "master", extract_author(event), url=new_checkout)
+def test_bump_command():
+    assert bump_command("master", extract_author(event)) == [
+        "bin/bump-sentry",
+        "master",
+        "--author",
+        expected_author,
+    ]
