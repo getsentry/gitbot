@@ -3,7 +3,14 @@ import os
 import tempfile
 import subprocess
 
-from gitbot.config import *
+from gitbot.config import (
+    COMMITTER_EMAIL,
+    COMMITTER_NAME,
+    DRY_RUN,
+    GETSENTRY_REPO_WITH_PAT,
+    LOGGING_LEVEL,
+    PAT,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(LOGGING_LEVEL)
