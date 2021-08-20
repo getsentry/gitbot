@@ -9,11 +9,11 @@ def test_release_version(tmpdir):
     # XXX: This code needs to be turned into a fixture
     new_checkout = tmpdir
     run(f"git clone --depth 1 {CHECKOUT_ROOT_PATH} {new_checkout}")
-    run("git checkout 5ba68307170688ab7ffbed696e4f61b8f6e767e7", cwd=new_checkout)
-    version = run("./release_version.sh", cwd=CHECKOUT_ROOT_PATH).stdout
-    # XXX: Adjust this code once it lands on master
-    assert version == "2021.8.20+093132.armenzg-semver.5ba6830"
+    run("git checkout 65174614f6109df4264febaf96b87b52b89d0ffe", cwd=new_checkout)
+    version = run("./release_version.sh", cwd=new_checkout).stdout
+    # XXX: Adjust the version once it lands on master
+    assert version == "2021.8.20+095555.HEAD.6517461"
     # The release version should be idempotent
     time.sleep(3)
-    version = run("./release_version.sh", cwd=CHECKOUT_ROOT_PATH).stdout
-    assert version == "2021.8.20+093132.armenzg-semver.5ba6830"
+    version = run("./release_version.sh", cwd=new_checkout).stdout
+    assert version == "2021.8.20+095555.HEAD.6517461"
