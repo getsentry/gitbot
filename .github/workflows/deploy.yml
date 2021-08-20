@@ -73,7 +73,8 @@ jobs:
 
       - name: Sentry Release
         uses: getsentry/action-release@v1.1.5
-        # If we manually deploy the PR we should report the release since we will not be naming it the same
+        # If we want to compare a release from a deployed PR we should report it, otherwise,
+        # it would only show up in the Sentry SaaS if an error occurred
         with:
           environment: ${{ steps.info.outputs.environment }}
           version: ${{ steps.info.outputs.release }}
