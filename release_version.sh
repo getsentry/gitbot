@@ -15,6 +15,8 @@ fi
 # Remove leading zeroes to make it valid semver
 COMMIT_SEMVER=${COMMIT_SEMVER/.0/.}
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
+# Remove backslahes since they are not permitted as valid releases
+BRANCH=${BRANCH///-}
 SHORT_SHA=$(git rev-parse --short HEAD)
 # This is to help differentiate releases that are from code in master
 if [ "${BRANCH}" != "master" ]; then

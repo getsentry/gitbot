@@ -12,8 +12,8 @@ def test_release_version(tmpdir):
     run("git checkout 5ba68307170688ab7ffbed696e4f61b8f6e767e7", cwd=new_checkout)
     version = run("./release_version.sh", cwd=CHECKOUT_ROOT_PATH).stdout
     # XXX: Adjust this code once it lands on master
-    assert version == "2021.8.20+093132.armenzg/semver.5ba6830"
+    assert version == "2021.8.20+093132.armenzg-semver.5ba6830"
     # The release version should be idempotent
     time.sleep(3)
     version = run("./release_version.sh", cwd=CHECKOUT_ROOT_PATH).stdout
-    assert version == "2021.8.20+093132.armenzg/semver.5ba6830"
+    assert version == "2021.8.20+093132.armenzg-semver.5ba6830"
