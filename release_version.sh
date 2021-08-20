@@ -25,4 +25,4 @@ else
     RELEASE="${COMMIT_SEMVER}.${SHORT_SHA}"
 fi
 
-echo "${RELEASE}"
+echo "gitbot@${RELEASE}"
