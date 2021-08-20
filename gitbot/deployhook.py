@@ -87,7 +87,7 @@ def bump_version(branch, ref_sha, author=None):
     # The branch has to be created manually in getsentry/getsentry!
     try:
         run(
-            f"git clone --depth 1 -b {branch} {GETSENTRY_REPO_WITH_PAT} {repo_root}",
+            f"git clone --depth 1 -b {branch} {GETSENTRY_REPO_URL} {repo_root}",
             cwd=repo_root,
         )
     except CommandError:
@@ -153,9 +153,9 @@ def process_push():
             if ENV == "staging":
                 try:
                     sync_with_upstream(
-                        SENTRY_CHECKOUT_PATH, repo_url_with_pat("getsentry/sentry")
+                        SENTRY_CHECKOUT_PATH, repo_url("getsentry/sentry")
                     )
-                except Exception:
+                except Exception as e:
                     logger.warn(
                         "We failed to sync Sentry with Sentry Test Repo (We will keep going)"
                     )
@@ -245,7 +245,7 @@ def process_git_revert():
     logger.info(f"{name} has requested to revert {sha} from {repo}")
 
     tmp_dir = tempfile.mkdtemp()
-    repo_url = SENTRY_REPO_WITH_PAT if repo == "sentry" else GETSENTRY_REPO_WITH_PAT
+    repo_url = SENTRY_REPO_URL if repo == "sentry" else GETSENTRY_REPO_URL
     checkout = SENTRY_CHECKOUT_PATH if repo == "sentry" else GETSENTRY_CHECKOUT_PATH
 
     # If there were multiple revert requests very close to each other there's a chance
