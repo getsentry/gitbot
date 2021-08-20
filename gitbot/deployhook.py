@@ -25,6 +25,10 @@ def boot():
             # We recommend adjusting this value in production.
             traces_sample_rate=1.0,
             environment=ENV,
+            # These values are to hopefully help errors that did not report on time to Sentry
+            # See https://github.com/getsentry/gitbot/pull/67 for details
+            shutdown_timeout=10,
+            transport_queue_size=1,
         )
         if not GITHUB_WEBHOOK_SECRET:
             raise SystemError("Empty GITHUB_WEBHOOK_SECRET!")
