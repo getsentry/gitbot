@@ -34,7 +34,7 @@ jobs:
 
       - name: Test that flask starts
         run: |-
-          # No need to checkout the repos just to test start up
+          # This saves the initial checkout of the repos and let's the Flask app initialize quickly
           export FAST_STARTUP=1
           nohup flask run &
           sleep 3 && curl --request POST http://0.0.0.0:5000
