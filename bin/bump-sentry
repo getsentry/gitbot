@@ -56,7 +56,9 @@ def main(sha, commit=True, author=None):
     )
 
     if author is not None:
-        author = author.replace('"', '"')
+        # fmt: off
+        author = author.replace('"', '\"')
+        # fmt: on
         git_command += f' --author="{author}"'
 
     if commit:
