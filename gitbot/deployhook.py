@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 if ENV != "development":
     logger.info(f"Environment: {ENV}")
-    logger.info(f"Release: gitbot@{os.environ['RELEASE']}")
+    logger.info(f"Release: {os.environ['RELEASE']}")
     sentry_sdk.init(
         dsn="https://95cc5cfe034b4ff8b68162078978935c@o1.ingest.sentry.io/5748916",
         integrations=[FlaskIntegration()],
@@ -32,7 +32,7 @@ if ENV != "development":
         # We recommend adjusting this value in production.
         traces_sample_rate=1.0,
         environment=ENV,
-        release=f"gitbot@{os.environ['RELEASE']}",
+        release=os.environ["RELEASE"],
     )
     if not GITHUB_WEBHOOK_SECRET:
         raise SystemError("Empty GITHUB_WEBHOOK_SECRET!")

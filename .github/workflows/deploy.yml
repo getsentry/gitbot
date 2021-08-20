@@ -4,9 +4,8 @@ env:
 
 on:
   push:
-    # XXX: Get rid of this when landing
-    # branches:
-    #   - master
+    branches:
+      - master
     paths:
       - "gitbot"
       - "Dockerfile"
