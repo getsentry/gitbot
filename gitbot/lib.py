@@ -7,7 +7,7 @@ from gitbot.config import (
     COMMITTER_EMAIL,
     COMMITTER_NAME,
     DRY_RUN,
-    GETSENTRY_REPO_WITH_PAT,
+    GETSENTRY_REPO_URL,
     LOGGING_LEVEL,
     PAT,
 )
@@ -114,12 +114,12 @@ def bump_command(ref_sha, author=""):
     # Original author will be displayed as author in getsentry/getsentry commits
     if author is not None:
         # fmt: off
-        cmd += ["--author", author.replace('"', '')]
+        cmd += ["--author", author.replace('"', '\"')]
         # fmt: on
     return cmd
 
 
-def bump_version(branch, ref_sha, author=None, url=GETSENTRY_REPO_WITH_PAT):
+def bump_version(branch, ref_sha, author=None, url=GETSENTRY_REPO_URL):
     repo_root = tempfile.mkdtemp()
 
     # The branch has to be created manually in getsentry/getsentry!

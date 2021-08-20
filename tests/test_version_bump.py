@@ -14,7 +14,7 @@ event = {
 
 # fmt: off
 expected_author = (
-    'Aniket Das Tekky <85517732+AniketDas-Tekky@users.noreply.github.com>'
+    'Aniket Das \"Tekky <85517732+AniketDas-Tekky@users.noreply.github.com>'
 )
 # fmt: on
 
