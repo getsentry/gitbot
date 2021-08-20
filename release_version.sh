@@ -14,12 +14,13 @@ else
 fi
 # Remove leading zeroes to make it valid semver
 COMMIT_SEMVER=${COMMIT_SEMVER/.0/.}
-
-# This is to help differentiate releases from PRs rather than from master
-if [ -n "${GITHUB_REF}" ] || [ "${GITHUB_REF}" == "refs/heads/master" ]; then
-    RELEASE="${COMMIT_SEMVER}.$(git rev-parse --short HEAD)"
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+SHORT_SHA=$(git rev-parse --short HEAD)
+# This is to help differentiate releases that are from code in master
+if [ "${BRANCH}" != "master" ]; then
+    RELEASE="${COMMIT_SEMVER}.${BRANCH}.${SHORT_SHA}"
 else
-    RELEASE="${COMMIT_SEMVER}.PR.$(git rev-parse --short HEAD)"
+    RELEASE="${COMMIT_SEMVER}.${SHORT_SHA}"
 fi
 
 echo "${RELEASE}"

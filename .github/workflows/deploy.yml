@@ -4,6 +4,7 @@ env:
 
 on:
   push:
+    # XXX: Get rid of this when landing
     # branches:
     #   - master
     paths:
@@ -72,8 +73,7 @@ jobs:
 
       - name: Sentry Release
         uses: getsentry/action-release@v1.1.5
-        # We only report new releases if deployed from master
-        # if: ${{ github.ref == 'refs/heads/master' }}
+        # If we manually deploy the PR we should report the release since we will not be naming it the same
         with:
           environment: ${{ steps.info.outputs.environment }}
           version: ${{ steps.info.outputs.release }}
