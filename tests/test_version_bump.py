@@ -1,7 +1,5 @@
 from gitbot.lib import bump_command, extract_author
 
-CHECKOUT_ROOT_PATH = __file__.rsplit("/", 2)[0]
-
 event = {
     "head_commit": {
         "author": {

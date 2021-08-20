@@ -91,7 +91,7 @@ def bump_version(branch, ref_sha, author=None, url=GETSENTRY_REPO_URL):
             cwd=repo_root,
         )
     except CommandError:
-        return False, "Cannot clone branch {} from {}.".format(branch, url)
+        return False, "Cannot clone branch {} from {}.".format(branch, GETSENTRY_REPO)
 
     run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
     run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
