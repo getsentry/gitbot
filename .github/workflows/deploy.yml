@@ -28,7 +28,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Where to deploy
+      - name: Metadata
         id: info
         run: |-
           if [ ${{ github.event.inputs.environment }} == 'production' ]; then
@@ -42,6 +42,8 @@ jobs:
             echo "::set-output name=service::sentry-deploy-sync-hook-staging"
             echo "::set-output name=environment::staging"
           fi
+          RELEASE=$(./release_version.sh)
+          echo "::set-output name=release::${RELEASE}"
 
       - name: Setup Cloud SDK
         uses: google-github-actions/setup-gcloud@v0.2.1
@@ -55,8 +57,10 @@ jobs:
         run: gcloud auth configure-docker
 
       - name: Build and Push Container
+        env:
+          RELEASE: ${{ steps.info.outputs.service }}
         run: |-
-          docker build -t us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA .
+          docker build --build-arg RELEASE="${RELEASE}" -t us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA .
           docker push us.gcr.io/$PROJECT_ID/sentry-deploy-sync-hook:$GITHUB_SHA
 
       - name: Deploy to Cloud Run
@@ -68,10 +72,11 @@ jobs:
 
       - name: Sentry Release
         uses: getsentry/action-release@v1.1.5
-        # We only report new releases if deployed from master
-        if: ${{ github.ref == 'refs/heads/master' }}
+        # If we want to compare a release from a deployed PR we should report it, otherwise,
+        # it would only show up in the Sentry SaaS if an error occurred
         with:
           environment: ${{ steps.info.outputs.environment }}
+          version: ${{ steps.info.outputs.release }}
         env:
           SENTRY_ORG: sentry
           SENTRY_PROJECT: gitbot

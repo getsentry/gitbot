@@ -17,14 +17,13 @@ from gitbot.lib import *
 def boot():
     if ENV != "development":
         logger.info(f"Environment: {ENV}")
+        logger.info(f"Release: {os.environ['RELEASE']}")
         sentry_sdk.init(
             dsn="https://95cc5cfe034b4ff8b68162078978935c@o1.ingest.sentry.io/5748916",
             integrations=[FlaskIntegration()],
-            # Set traces_sample_rate to 1.0 to capture 100%
-            # of transactions for performance monitoring.
-            # We recommend adjusting this value in production.
             traces_sample_rate=1.0,
             environment=ENV,
+            release=os.environ["RELEASE"],
             # These values are to hopefully help errors that did not report on time to Sentry
             # See https://github.com/getsentry/gitbot/pull/67 for details
             shutdown_timeout=10,
@@ -63,10 +62,11 @@ def boot():
 
 # Alias for updating the Sentry and Getsentry repos
 def update_primary_repo(repo):
+    quiet = LOGGING_LEVEL != "debug"
     if repo == "sentry":
-        update_checkout(SENTRY_REPO_URL, SENTRY_CHECKOUT_PATH)
+        update_checkout(SENTRY_REPO_URL, SENTRY_CHECKOUT_PATH, quiet)
     else:
-        update_checkout(GETSENTRY_REPO_URL, GETSENTRY_CHECKOUT_PATH)
+        update_checkout(GETSENTRY_REPO_URL, GETSENTRY_CHECKOUT_PATH, quiet)
 
 
 def respond(data, status_code):
