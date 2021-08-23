@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 if ENV != "development":
     logger.info(f"Environment: {ENV}")
+    logger.info(f"Release: {os.environ['RELEASE']}")
     sentry_sdk.init(
         dsn="https://95cc5cfe034b4ff8b68162078978935c@o1.ingest.sentry.io/5748916",
         integrations=[FlaskIntegration()],
@@ -31,6 +32,7 @@ if ENV != "development":
         # We recommend adjusting this value in production.
         traces_sample_rate=1.0,
         environment=ENV,
+        release=os.environ["RELEASE"],
     )
     if not GITHUB_WEBHOOK_SECRET:
         raise SystemError("Empty GITHUB_WEBHOOK_SECRET!")
@@ -52,10 +54,11 @@ os.environ["GIT_AUTHOR_NAME"] = COMMITTER_NAME
 
 # Alias for updating the Sentry and Getsentry repos
 def update_primary_repo(repo):
+    quiet = LOGGING_LEVEL != "debug"
     if repo == "sentry":
-        update_checkout(SENTRY_REPO_URL, SENTRY_CHECKOUT_PATH)
+        update_checkout(SENTRY_REPO_URL, SENTRY_CHECKOUT_PATH, quiet)
     else:
-        update_checkout(GETSENTRY_REPO_URL, GETSENTRY_CHECKOUT_PATH)
+        update_checkout(GETSENTRY_REPO_URL, GETSENTRY_CHECKOUT_PATH, quiet)
 
 
 # This clones/updates the primary repos under /tmp
