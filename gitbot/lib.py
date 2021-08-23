@@ -37,8 +37,6 @@ def run(cmd, cwd: str = "/tmp", quiet: bool = False) -> object:
             _command = _command.replace(PAT, "<secret>")
         logger.info(_command)
 
-    if not os.path.exists(cwd):
-        raise CommandError(f"The path {cwd} does not exist.")
     # Capture the output so you can process it later and to show up in Sentry
     # Redirect stderr to stdout
     execution = subprocess.run(
