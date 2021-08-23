@@ -7,9 +7,10 @@ on:
     branches:
       - master
     paths:
-      - "gitbot"
-      - "Dockerfile"
-      - "requirements.txt"
+      - "gitbot/*"
+      - Dockerfile
+      - "requirements.*.txt"
+      - .github/workflows/deploy.yml
 
   workflow_dispatch:
     inputs:
