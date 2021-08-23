@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import json
 import logging
+import os
 import sys
 
 import requests
@@ -89,7 +90,8 @@ def main(host, port, action, repo, sha, author, email):
     if port:
         host_url += f":{port}"
 
-    if not (author and email):
+    # We do not need to run this on CI
+    if not (author and email) and not os.environ.get("CI"):
         author = run("git config --global user.name", quiet=True).stdout
         email = run("git config --global user.email", quiet=True).stdout
 
