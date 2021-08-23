@@ -103,7 +103,7 @@ flask run
 To test the different APIs use the `ingest.py` script:
 
 ```shell
-python scripts/ingest.py
+python ingest.py
 ```
 
 **NOTE**: This script is work-in-progress. Read the code to understand it.
