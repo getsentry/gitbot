@@ -34,6 +34,9 @@ jobs:
 
       - name: Test that flask starts
         run: |-
+          # These are values that devs would actually have set
+          git config --global user.name Foo
+          git config --global user.email foo@tbd.com
           # This tests that we fail when the server is down
           python ingest.py; [[ "$?" == 1 ]]
           # This saves the initial checkout of the repos and let's the Flask app initialize quickly
