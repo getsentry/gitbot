@@ -13,6 +13,14 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from gitbot.config import *
 from gitbot.lib import *
 
+logging.basicConfig(
+    level=LOGGING_LEVEL,
+    # GCR logs already include the time
+    format="%(message)s" if ENV == "development" else "%(levelname)-8s %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+
 
 def boot():
     if ENV != "development":
@@ -216,20 +224,8 @@ def valid_payload(secret: str, payload: str, signature: str) -> bool:
     return hmac.compare_digest(payload_signature, signature)
 
 
-logging.basicConfig(
-    level=LOGGING_LEVEL,
-    # GCR logs already include the time
-    format="%(message)s" if ENV == "development" else "%(levelname)-8s %(message)s",
-    datefmt="%H:%M:%S",
-)
-logger = logging.getLogger(__name__)
-try:
-    boot()
-    app = Flask(__name__)
-except Exception as e:
-    sentry_sdk.capture_exception(e)
-    logger.exception(e)
-    raise (e)
+boot()
+app = Flask(__name__)
 
 
 @app.route("/", methods=["POST"])
