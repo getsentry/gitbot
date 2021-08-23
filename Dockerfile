@@ -15,6 +15,9 @@ RUN pip install -r requirements.txt
 
 # Source code
 COPY gitbot/*py /app/gitbot/
+# This sets the RELEASE env variable required for semver release reporting in Sentry
+ARG RELEASE
+ENV RELEASE=${RELEASE}
 
 # 1 worker, 4 worker threads should be more than enough.
 # --worker-class gthread is automatically set if --threads > 1.
