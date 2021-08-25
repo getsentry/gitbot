@@ -5,13 +5,20 @@ import hashlib
 import hmac
 import json
 import logging
+import os
 import sys
 
 import requests
 import click
+from requests.exceptions import ConnectionError
 
-from config import GITBOT_API_SECRET, GITHUB_WEBHOOK_SECRET, SENTRY_REPO, LOGGING_LEVEL
-from lib import run
+from gitbot.config import (
+    GITBOT_API_SECRET,
+    GITHUB_WEBHOOK_SECRET,
+    SENTRY_REPO,
+    LOGGING_LEVEL,
+)
+from gitbot.lib import run
 
 logging.basicConfig(format="%(levelname)-8s %(message)s")
 logger = logging.getLogger(__name__)
@@ -83,7 +90,8 @@ def main(host, port, action, repo, sha, author, email):
     if port:
         host_url += f":{port}"
 
-    if not (author and email):
+    # We do not need to run this on CI
+    if not (author and email) and not os.environ.get("CI"):
         author = run("git config --global user.name", quiet=True).stdout
         email = run("git config --global user.email", quiet=True).stdout
 
@@ -94,14 +102,21 @@ def main(host, port, action, repo, sha, author, email):
         payload, header = bump_payload_header(sha, author, email)
         url = f"{host_url}/"
     else:
-        print("Invalid action.")
-        sys.exit("1")
+        print("This action won't do anything but an empty POST request.")
+        payload = {}
+        header = {}
+        url = f"{host_url}/"
 
     print(f"Making request: {url}")
     print(f"- payload: {payload}")
     print(f"- header: {header}")
-    resp = requests.post(url, headers=header, json=payload)
-    print(resp.text)
+
+    try:
+        resp = requests.post(url, headers=header, json=payload)
+        print(resp.text)
+    except ConnectionError as e:
+        print(e)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
