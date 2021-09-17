@@ -5,20 +5,14 @@ from gitbot.lib import bump_command, bump_version, extract_author
 event = {
     "head_commit": {
         "author": {
-            # fmt: off
             "name": 'Aniket Das "Tekky',
-            # fmt: on
             "email": "85517732+AniketDas-Tekky@users.noreply.github.com",
             "username": "AniketDas-Tekky",
         },
     },
 }
 
-# fmt: off
-expected_author = (
-    'Aniket Das Tekky <85517732+AniketDas-Tekky@users.noreply.github.com>'
-)
-# fmt: on
+expected_author = "Aniket Das Tekky <85517732+AniketDas-Tekky@users.noreply.github.com>"
 
 
 def test_bump_command():
