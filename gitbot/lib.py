@@ -115,7 +115,7 @@ def bump_command(ref_sha, author=""):
     # Original author will be displayed as author in getsentry/getsentry commits
     if author is not None:
         # fmt: off
-        cmd += ["--author", author.replace('"', '\"')]
+        cmd += ["--author", author.replace('"', '')]
         # fmt: on
     return cmd
 
