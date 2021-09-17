@@ -1,8 +1,17 @@
 import logging
 import os
 import subprocess
+import tempfile
 
-from gitbot.config import LOGGING_LEVEL, PAT
+from gitbot.config import (
+    COMMITTER_EMAIL,
+    COMMITTER_NAME,
+    DRY_RUN,
+    GETSENTRY_REPO_URL,
+    GETSENTRY_REPO,
+    LOGGING_LEVEL,
+    PAT,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(LOGGING_LEVEL)
@@ -109,3 +118,40 @@ def bump_command(ref_sha, author=""):
         cmd += ["--author", author.replace('"', '\"')]
         # fmt: on
     return cmd
+
+
+def bump_version(branch, ref_sha, author=None, url=GETSENTRY_REPO_URL, dry_run=DRY_RUN):
+    repo_root = tempfile.mkdtemp()
+
+    # The branch has to be created manually in getsentry/getsentry!
+    try:
+        run(
+            f"git clone --depth 1 -b {branch} {url} {repo_root}",
+            cwd=repo_root,
+        )
+    except CommandError:
+        return False, "Cannot clone branch {} from {}.".format(branch, GETSENTRY_REPO)
+
+    run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
+    run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
+
+    command = bump_command(ref_sha, author)
+    run(command, cwd=repo_root)
+
+    if dry_run:
+        push_cmd = f"git push origin --dry-run {branch}"
+    else:
+        push_cmd = f"git push origin {branch}"
+    successful_push = False
+    for _ in range(5):
+        try:
+            run(push_cmd, cwd=repo_root)
+            successful_push = True
+            break
+        except CommandError:
+            run(f"git pull --rebase origin {branch}", cwd=repo_root)
+
+    if not successful_push:
+        return False, "Failed to push."
+    else:
+        return True, f"Executed: {command}"
