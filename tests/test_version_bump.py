@@ -31,7 +31,9 @@ def test_bump_command():
 
 
 def test_bump_version():
+    # This will checkout gitbot in a tempdir and try calling bin/bump-sentry
     bump_version(
+        # XXX: Fix before merging
         "armenzg/feat/fix",
         "9962ffff3d0b1973fb05e16cd6a3328c5ecb1401",
         extract_author(event),
