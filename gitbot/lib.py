@@ -110,8 +110,8 @@ def extract_author(data):
     return author
 
 
-def bump_command(ref_sha, author=""):
-    cmd = ["bin/bump-sentry", ref_sha]
+def bump_command(ref_sha, author="", binary_path="bin/bump-sentry"):
+    cmd = [binary_path, ref_sha]
     # Original author will be displayed as author in getsentry/getsentry commits
     if author is not None:
         # fmt: off

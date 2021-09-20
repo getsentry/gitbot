@@ -16,7 +16,9 @@ expected_author = "Aniket Das Tekky <85517732+AniketDas-Tekky@users.noreply.gith
 
 
 def test_bump_command():
-    assert bump_command("master", extract_author(event)) == [
+    assert bump_command(
+        "master", extract_author(event), binary_path="tests/bin/bump-sentry"
+    ) == [
         "bin/bump-sentry",
         "master",
         "--author",
