@@ -36,6 +36,8 @@ def main(sha, commit=True, author=None):
         )
         outfile.write("\n")
 
+    check_call("git status", shell=True)
+
     git_command = (
         "git add requirements.txt requirements.dev.txt && "
         f'git commit -n -m "getsentry/sentry@{sha}" -m "#skipsentry"'
