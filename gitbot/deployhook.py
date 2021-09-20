@@ -2,7 +2,6 @@ import hmac
 import hashlib
 import logging
 import os
-import tempfile
 from operator import itemgetter
 
 import sentry_sdk
@@ -84,43 +83,6 @@ def respond(data, status_code):
     if status_code != 200:
         sentry_sdk.capture_message(data["reason"], "fatal")
     return jsonify(data), status_code
-
-
-def bump_version(branch, ref_sha, author=None):
-    repo_root = tempfile.mkdtemp()
-
-    # The branch has to be created manually in getsentry/getsentry!
-    try:
-        run(
-            f"git clone --depth 1 -b {branch} {GETSENTRY_REPO_URL} {repo_root}",
-            cwd=repo_root,
-        )
-    except CommandError:
-        return False, "Cannot clone branch {} from {}.".format(branch, GETSENTRY_REPO)
-
-    run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
-    run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
-
-    command = bump_command(ref_sha, author)
-    run(command, cwd=repo_root)
-
-    if DRY_RUN:
-        push_cmd = f"git push origin --dry-run {branch}"
-    else:
-        push_cmd = f"git push origin {branch}"
-    successful_push = False
-    for _ in range(5):
-        try:
-            run(push_cmd, cwd=repo_root)
-            successful_push = True
-            break
-        except CommandError:
-            run(f"git pull --rebase origin {branch}", cwd=repo_root)
-
-    if not successful_push:
-        return False, "Failed to push."
-    else:
-        return True, f"Executed: {command}"
 
 
 # Github's UI looks really bad when most responses are 400
