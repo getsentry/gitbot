@@ -38,9 +38,9 @@ def main(sha, commit=True, author=None):
         outfile.write("\n")
 
     check_call("git status", shell=True)
-    import pdb
+    # import pdb
 
-    pdb.set_trace()
+    # pdb.set_trace()
 
     git_command = (
         "git add requirements.txt requirements.dev.txt && "
