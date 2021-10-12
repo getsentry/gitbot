@@ -140,16 +140,16 @@ def bump_version(branch, ref_sha, author=None, url=GETSENTRY_REPO_URL, dry_run=D
     run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
     run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
 
-    command = bump_command(ref_sha, author)
-    run(command, cwd=repo_root)
-
     if dry_run:
         push_cmd = f"git push origin --dry-run {branch}"
     else:
         push_cmd = f"git push origin {branch}"
     successful_push = False
+    bump_and_commit = None
     for _ in range(5):
         try:
+            bump_and_commit = bump_command(ref_sha, author)
+            run(bump_and_commit, cwd=repo_root)
             run(push_cmd, cwd=repo_root)
             successful_push = True
             break
@@ -159,4 +159,4 @@ def bump_version(branch, ref_sha, author=None, url=GETSENTRY_REPO_URL, dry_run=D
     if not successful_push:
         return False, "Failed to push."
     else:
-        return True, f"Executed: {command}"
+        return True, f"Executed: {bump_and_commit}"
