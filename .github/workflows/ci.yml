@@ -23,9 +23,10 @@ jobs:
           sleep 10
           docker logs $container_id 
           echo "$container_id"
+          set -x
           curl --request POST http://0.0.0.0:8080  2>&1
           echo $?
-          [ $? != 0 ] && docker logs $container_id && exit 1
+          [ $? != 0 ] && docker logs $container_id && exit 2
 
   flask:
     name: test flask starts
