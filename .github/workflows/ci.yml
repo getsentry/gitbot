@@ -19,7 +19,7 @@ jobs:
 
       - name: Run image & ingest
         run: |
-          container_id=$(docker run -p 8080:8080 -d -e DRY_RUN -e FAST_STARTUP=1 gitbot:latest)
+          container_id=$(docker run -p 8080:8080 -d -e DRY_RUN=1 -e FAST_STARTUP=1 gitbot:latest)
           sleep 10
           docker logs $container_id 
           echo "$container_id"
