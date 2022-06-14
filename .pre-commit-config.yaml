@@ -5,7 +5,7 @@ repos:
       - id: black
         language_version: python3
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.3.1
+    rev: b103ecffb0060a049fafc987596bc93ac8242e0a # 0.16.0
     hooks:
       - id: check-github-workflows
   - repo: https://gitlab.com/pycqa/flake8
