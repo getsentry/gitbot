@@ -1,6 +1,12 @@
+from unittest.mock import patch
 import os
 
-from gitbot.lib import bump_command, bump_version, extract_author
+from gitbot.lib import (
+    bump_command,
+    bump_version,
+    bump_sentry_path,
+    extract_author,
+)
 
 event = {
     "head_commit": {
@@ -11,20 +17,38 @@ event = {
         },
     },
 }
-
 expected_author = "Aniket Das Tekky <85517732+AniketDas-Tekky@users.noreply.github.com>"
+tests_bump_sentry_path = "tests/bin/bump-sentry"
 
 
-def test_bump_command():
-    assert bump_command("master", extract_author(event)) == [
-        "tests/bin/bump-sentry",
-        "master",
+def test_different_bump_sentry_path_with_env(monkeypatch):
+    monkeypatch.setenv("GITBOT_BUMP_SENTRY_PATH", "different/path")
+    assert bump_sentry_path() == "different/path"
+
+
+@patch("gitbot.lib.bump_sentry_path")
+def test_bump_command(mock_bump_path):
+    mock_bump_path.return_value = tests_bump_sentry_path
+    assert bump_command(ref_sha="foo", author=extract_author(event)) == [
+        tests_bump_sentry_path,
+        "foo",
         "--author",
         expected_author,
     ]
 
 
-def test_bump_version():
+@patch("gitbot.lib.bump_sentry_path")
+def test_bump_command_no_author(mock_bump_path):
+    mock_bump_path.return_value = tests_bump_sentry_path
+    assert bump_command(ref_sha="foo") == [
+        tests_bump_sentry_path,
+        "foo",
+    ]
+
+
+@patch("gitbot.lib.bump_sentry_path")
+def test_bump_version(mock_bump_path):
+    mock_bump_path.return_value = tests_bump_sentry_path
     # This will checkout gitbot in a tempdir and try calling bin/bump-sentry
     bump_version(
         "master",
