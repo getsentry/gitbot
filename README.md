@@ -24,6 +24,15 @@ By default, the development set up will push changes to [getsentry-test-repo](ht
 
 To test against another repo you can use the env variable `GETSENTRY_REPO` in order to point to a different repo you have write access to. In order for this to work, such repo needs `bin/bump-sentry` and `cloudbuild.yaml` from the getsentry repo.
 
+## Pinning requirements
+
+If you're changing the requirements, after having activated the venv and installed the dependencies run the following:
+
+```shell
+python -m piptools compile > requirements.txt
+python -m piptools compile requirements.dev.in > requirements.dev.txt
+```
+
 ## Testing changes
 
 Testing pushes:
