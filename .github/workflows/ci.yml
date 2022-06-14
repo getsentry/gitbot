@@ -19,11 +19,12 @@ jobs:
 
       - name: Run image & ingest
         run: |
-          container_id=$(docker run -p 8080:8080 -d -e GOOGLE_APPLICATION_CREDENTIALS -e FAST_STARTUP=1 gitbot:latest)
+          container_id=$(docker run -p 8080:8080 -d -e DRY_RUN -e FAST_STARTUP=1 gitbot:latest)
           sleep 10
           docker logs $container_id 
           echo "$container_id"
-          curl --request POST http://0.0.0.0:8080
+          curl --request POST http://0.0.0.0:8080  2>&1
+          echo $?
           [ $? != 0 ] && docker logs $container_id && exit 1
 
   flask:
