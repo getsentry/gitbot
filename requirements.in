@@ -1,8 +1,8 @@
 google-cloud-secret-manager==2.4.0
 gunicorn==20.0.4
 Flask==1.1.2
-# Pinning this version of Jinja2, otherwise, Flask would fail to run
+# Pinning these versions, otherwise, Flask would fail to run
 Jinja2==2.11.3
-# Pinning this version of MarkupSafe, otherwise, Flask would fail to run
 MarkupSafe==2.0.1
+itsdangerous==2.0.1
 sentry-sdk[flask]==1.1.0
