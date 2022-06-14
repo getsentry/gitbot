@@ -1,8 +1,4 @@
 google-cloud-secret-manager==2.4.0
 gunicorn==20.0.4
-Flask==1.1.2
-# Pinning these versions, otherwise, Flask would fail to run
-Jinja2==2.11.3
-MarkupSafe==2.0.1
-itsdangerous==2.0.1
+Flask==2.1.2
 sentry-sdk[flask]==1.1.0
