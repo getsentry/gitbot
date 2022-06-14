@@ -49,8 +49,10 @@ jinja2==2.11.3
     #   flask
 libcst==0.4.4
     # via google-cloud-secret-manager
-markupsafe==2.1.1
-    # via jinja2
+markupsafe==2.0.1
+    # via
+    #   -r requirements.in
+    #   jinja2
 mypy-extensions==0.4.3
     # via typing-inspect
 packaging==21.3
