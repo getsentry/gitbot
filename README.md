@@ -30,7 +30,7 @@ If you're changing the requirements, after having activated the venv and install
 
 ```shell
 python3.8 -m piptools compile requirements.in --no-annotate -o requirements.txt
-python3.8 -m piptools compile requirements.dev.in --no-annotate -o requirements.dev.txt
+python3.8 -m piptools compile requirements.in requirements.dev.in --no-annotate -o requirements.dev.txt
 ```
 
 ## Testing changes
@@ -104,7 +104,7 @@ You can also use a virtualenv and execute flask in development mode:
 python3 -m venv venv
 source venv/bin/activate
 pip install wheel
-pip install -r requirements.txt
+pip install -r requirements.dev.txt
 # There are certain variables from env.development that get loaded via python-dotenv
 flask run
 ```
