@@ -35,7 +35,7 @@ jobs:
       - name: Install requirements
         run: |
           pip install -U pip wheel
-          pip install -r requirements.dev.txt
+          pip install -r requirements.dev-prod.txt
 
       - name: Test that flask starts
         run: |-
@@ -55,7 +55,7 @@ jobs:
       - name: Install requirements
         run: |
           pip install -U pip wheel
-          pip install -r requirements.dev.txt
+          pip install -r requirements.dev-prod.txt
 
       - name: Run tests
         run: |
