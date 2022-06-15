@@ -29,8 +29,8 @@ To test against another repo you can use the env variable `GETSENTRY_REPO` in or
 If you're changing the requirements, after having activated the venv and installed the dependencies run the following:
 
 ```shell
-python3.8 -m piptools compile requirements.in --no-annotate -o requirements.txt
-python3.8 -m piptools compile requirements.in requirements.dev.in --no-annotate -o requirements.dev.txt
+python3.10 -m piptools compile requirements.in --no-annotate -o requirements.txt
+python3.10 -m piptools compile requirements.in requirements.dev.in --no-annotate -o requirements.dev.txt
 ```
 
 ## Testing changes
