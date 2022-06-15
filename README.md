@@ -30,7 +30,7 @@ If you're changing the requirements, after having activated the venv and install
 
 ```shell
 python3.10 -m piptools compile requirements.in --no-annotate -o requirements.txt
-python3.10 -m piptools compile requirements.in requirements.dev.in --no-annotate -o requirements.dev-prod.txt
+python3.10 -m piptools compile requirements.in requirements.dev-prod.in --no-annotate -o requirements.dev-prod.txt
 ```
 
 ## Testing changes
