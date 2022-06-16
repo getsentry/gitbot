@@ -2,6 +2,7 @@ import hmac
 import hashlib
 import logging
 import os
+import tempfile
 from operator import itemgetter
 
 import sentry_sdk
@@ -9,8 +10,34 @@ import sentry_sdk
 from flask import Flask, request, jsonify
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-from gitbot.config import *
-from gitbot.lib import *
+from gitbot.config import (
+    COMMITTER_EMAIL,
+    COMMITTER_NAME,
+    DRY_RUN,
+    ENV,
+    GETSENTRY_BRANCH,
+    GETSENTRY_CHECKOUT_PATH,
+    GETSENTRY_REPO,
+    GETSENTRY_REPO_URL,
+    GITBOT_API_SECRET,
+    GITBOT_MARKER,
+    GITHUB_WEBHOOK_SECRET,
+    IS_DEV,
+    LOGGING_LEVEL,
+    SENTRY_CHECKOUT_PATH,
+    SENTRY_REPO,
+    SENTRY_REPO_UPSTREAM,
+    SENTRY_REPO_URL,
+    repo_url,
+)
+from gitbot.lib import (
+    CommandError,
+    bump_version,
+    extract_author,
+    run,
+    sync_with_upstream,
+    update_checkout,
+)
 
 logging.basicConfig(
     level=LOGGING_LEVEL,
