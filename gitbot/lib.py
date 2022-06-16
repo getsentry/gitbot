@@ -1,5 +1,7 @@
+import contextlib
 import logging
 import os
+import shlex
 import subprocess
 import tempfile
 
@@ -21,7 +23,9 @@ class CommandError(Exception):
     pass
 
 
-def run(cmd, cwd: str = "/tmp", quiet: bool = False) -> object:
+def run(
+    cmd, cwd: str = "/tmp", quiet: bool = False, raise_error: bool = True
+) -> object:
     new_cmd = None
     if isinstance(cmd, str):
         new_cmd = cmd.split()
@@ -64,7 +68,7 @@ def run(cmd, cwd: str = "/tmp", quiet: bool = False) -> object:
 
     execution.stdout = output.strip()
     # If we raise an exception we will see it reported in Sentry and abort code execution
-    if execution.returncode != 0:
+    if execution.returncode != 0 and raise_error:
         raise CommandError(output)
     return execution
 
@@ -132,43 +136,46 @@ def bump_version(
     author=None,
     url=GETSENTRY_REPO_URL,
     dry_run=DRY_RUN,
-    temp_checkout=tempfile.mkdtemp(),
-    delete_temp_checkout=True,
+    temp_checkout=None,
 ):
-    repo_root = temp_checkout
+    with contextlib.ExitStack() as ctx:
+        if temp_checkout is not None:
+            repo_root = temp_checkout
+        else:
+            # Once we exit the with statement the temporary directory witll be deleted
+            repo_root = ctx.enter_context(tempfile.TemporaryDirectory())
 
-    # The branch has to be created manually in getsentry/getsentry!
-    try:
-        run(
-            f"git clone --depth 1 -b {branch} {url} {repo_root}",
-            cwd=repo_root,
-        )
-    except CommandError:
-        return False, "Cannot clone branch {} from {}.".format(branch, GETSENTRY_REPO)
-
-    run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
-    run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
-
-    command = bump_command(ref_sha, author)
-    run(command, cwd=repo_root)
-
-    if dry_run:
-        push_cmd = f"git push origin --dry-run {branch}"
-    else:
-        push_cmd = f"git push origin {branch}"
-    successful_push = False
-    for _ in range(5):
+        # The branch has to exist in the remote repo
         try:
-            run(push_cmd, cwd=repo_root)
-            successful_push = True
-            break
+            run(
+                f"git clone --depth 1 -b {branch} {url} {repo_root}",
+                cwd=repo_root,
+            )
         except CommandError:
-            run(f"git pull --rebase origin {branch}", cwd=repo_root)
+            return False, "Cannot clone branch {} from {}.".format(
+                branch, GETSENTRY_REPO
+            )
 
-    if delete_temp_checkout:
-        os.rmdir(repo_root)
+        run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
+        run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
 
-    if not successful_push:
-        return False, "Failed to push."
-    else:
-        return True, f"Executed: {' '.join(command)}"
+        command = bump_command(ref_sha, author)
+        run(command, cwd=repo_root)
+
+        if dry_run:
+            push_cmd = f"git push origin --dry-run {branch}"
+        else:
+            push_cmd = f"git push origin {branch}"
+        successful_push = False
+        for _ in range(5):
+            try:
+                run(push_cmd, cwd=repo_root)
+                successful_push = True
+                break
+            except CommandError:
+                run(f"git pull --rebase origin {branch}", cwd=repo_root)
+
+        if not successful_push:
+            return False, "Failed to push."
+        else:
+            return True, f"Executed: {shlex.join(command)}"

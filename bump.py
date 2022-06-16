@@ -13,42 +13,57 @@ logging.getLogger().setLevel("DEBUG")
 logging.basicConfig()
 
 
+def validate_bump(result, text, tmpdir):
+    assert result is True
+    assert text == "Executed: bin/bump-sentry ccc86db8a6a2541b5786f76e8461f587a8adca20"
+    execution = run("git show -s --oneline", tmpdir)
+    assert (
+        execution.stdout.find(
+            "getsentry/sentry@ccc86db8a6a2541b5786f76e8461f587a8adca20"
+        )
+        > -1
+    )
+    execution = run("git grep ccc86db8a6a2541b5786f76e8461f587a8adca20", tmpdir)
+    split_lines = execution.stdout.splitlines()
+    assert len(split_lines) == 4
+    for line in split_lines:
+        assert (
+            line.find("SENTRY_VERSION_SHA=ccc86db8a6a2541b5786f76e8461f587a8adca20")
+            > -1
+        )
+
+
 def main(branch, getsentry_path):
+    reset_name = (
+        run(
+            "git config --local user.name", cwd=getsentry_path, raise_error=False
+        ).returncode
+        != 0
+    )
+    reset_email = (
+        run(
+            "git config --local user.email", cwd=getsentry_path, raise_error=False
+        ).returncode
+        != 0
+    )
     tmpdir = mkdtemp()
     try:
+        # raise Exception()
         # We make a soft clone of it into a tempdir and then try to bump
         result, text = bump_version(
             branch=branch,
-            # Random sha from Sentry repo
-            ref_sha="ccc86db8a6a2541b5786f76e8461f587a8adca20",
-            # It will soft clone to a tempdir
-            url=getsentry_path,
-            # This will prevent trying to push
-            dry_run=True,
-            temp_checkout=tmpdir,
-            delete_temp_checkout=False,
+            ref_sha="ccc86db8a6a2541b5786f76e8461f587a8adca20",  # Random sha from Sentry repo
+            url=getsentry_path,  # It will soft clone
+            dry_run=True,  # This will prevent trying to push
+            temp_checkout=tmpdir,  # We pass this value in order to inspect what happened
         )
-        # print(execution.stdout)
-        assert result is True
-        assert (
-            text == "Executed: bin/bump-sentry ccc86db8a6a2541b5786f76e8461f587a8adca20"
-        )
-        execution = run("git show -s --oneline", tmpdir)
-        assert (
-            execution.stdout.find(
-                "getsentry/sentry@ccc86db8a6a2541b5786f76e8461f587a8adca20"
-            )
-            > -1
-        )
-        execution = run("git grep ccc86db8a6a2541b5786f76e8461f587a8adca20", tmpdir)
-        split_lines = execution.stdout.splitlines()
-        assert len(split_lines) == 4
-        for line in split_lines:
-            assert (
-                line.find("SENTRY_VERSION_SHA=ccc86db8a6a2541b5786f76e8461f587a8adca20")
-                > -1
-            )
+        validate_bump(result, text, tmpdir)
     finally:
+        # This undoes what bump version did
+        if reset_name:
+            run("git config --unset user.name", cwd=getsentry_path, raise_error=False)
+        if reset_email:
+            run("git config --unset user.email", cwd=getsentry_path, raise_error=False)
         shutil.rmtree(tmpdir)
 
 
