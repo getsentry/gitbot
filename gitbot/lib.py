@@ -110,13 +110,14 @@ def extract_author(data):
     return author
 
 
-def bump_command(ref_sha, author=""):
-    binary_path = (
-        "tests/bin/bump-sentry"
-        if os.environ.get("PYTEST_CURRENT_TEST")
-        else "bin/bump-sentry"
-    )
-    cmd = [binary_path, ref_sha]
+def bump_sentry_path():
+    # Allowing changing this via the env variable will allow the getsentry repo to test
+    # changes to the official file
+    return os.environ.get("GITBOT_BUMP_SENTRY_PATH", "bin/bump-sentry")
+
+
+def bump_command(ref_sha, author=None):
+    cmd = [bump_sentry_path(), ref_sha]
     # Original author will be displayed as author in getsentry/getsentry commits
     if author is not None:
         # fmt: off

@@ -16,8 +16,13 @@ jobs:
         run: |
           # We are not yet using the new naming in the deploy workflow
           docker build -t gitbot:latest .
-          docker run -p 8080:8080 -d -e GOOGLE_APPLICATION_CREDENTIALS -e FAST_STARTUP=1 gitbot:latest
-          sleep 10 && curl --request POST http://0.0.0.0:8080
+
+      - name: Run image & ingest
+        run: |
+          container_id=$(docker run -p 8080:8080 -d -e DRY_RUN=1 -e FAST_STARTUP=1 gitbot:latest)
+          sleep 10
+          curl --request POST http://0.0.0.0:8080  2>&1
+          [ $? == 0 ] && exit 0 || docker logs $container_id && exit 1
 
   flask:
     name: test flask starts
@@ -30,7 +35,7 @@ jobs:
       - name: Install requirements
         run: |
           pip install -U pip wheel
-          pip install -r requirements.txt -r requirements.dev.txt
+          pip install -r requirements.dev-prod.txt
 
       - name: Test that flask starts
         run: |-
@@ -50,7 +55,7 @@ jobs:
       - name: Install requirements
         run: |
           pip install -U pip wheel
-          pip install -r requirements.txt -r requirements.dev.txt
+          pip install -r requirements.dev-prod.txt
 
       - name: Run tests
         run: |

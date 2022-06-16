@@ -24,6 +24,15 @@ By default, the development set up will push changes to [getsentry-test-repo](ht
 
 To test against another repo you can use the env variable `GETSENTRY_REPO` in order to point to a different repo you have write access to. In order for this to work, such repo needs `bin/bump-sentry` and `cloudbuild.yaml` from the getsentry repo.
 
+## Pinning requirements
+
+If you're changing the requirements, after having activated the venv and installed the dependencies run the following:
+
+```shell
+python3.10 -m piptools compile requirements.in --no-annotate -o requirements.txt
+python3.10 -m piptools compile requirements.in requirements.dev-prod.in --no-annotate -o requirements.dev-prod.txt
+```
+
 ## Testing changes
 
 Testing pushes:
@@ -95,7 +104,7 @@ You can also use a virtualenv and execute flask in development mode:
 python3 -m venv venv
 source venv/bin/activate
 pip install wheel
-pip install -r requirements.txt
+pip install -r requirements.dev-prod.txt
 # There are certain variables from env.development that get loaded via python-dotenv
 flask run
 ```
