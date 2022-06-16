@@ -70,7 +70,7 @@ def run(cmd, cwd: str = "/tmp", quiet: bool = False) -> object:
 
 
 def update_checkout(repo_url, checkout_path, quiet=False):
-    logger.info(f"About to clone/pull to {checkout_path}.")
+    logger.info(f"About to clone/pull {repo_url} to {checkout_path}.")
     if not os.path.exists(checkout_path):
         # We clone before the app is running. Requests will clone from this checkout
         run(f"git clone {repo_url} {checkout_path}", quiet=quiet)
@@ -126,8 +126,15 @@ def bump_command(ref_sha, author=None):
     return cmd
 
 
-def bump_version(branch, ref_sha, author=None, url=GETSENTRY_REPO_URL, dry_run=DRY_RUN):
-    repo_root = tempfile.mkdtemp()
+def bump_version(
+    branch,
+    ref_sha,
+    author=None,
+    url=GETSENTRY_REPO_URL,
+    dry_run=DRY_RUN,
+    temp_checkout=tempfile.mkdtemp(),
+):
+    repo_root = temp_checkout
 
     # The branch has to be created manually in getsentry/getsentry!
     try:
@@ -160,4 +167,4 @@ def bump_version(branch, ref_sha, author=None, url=GETSENTRY_REPO_URL, dry_run=D
     if not successful_push:
         return False, "Failed to push."
     else:
-        return True, f"Executed: {command}"
+        return True, f"Executed: {' '.join(command)}"

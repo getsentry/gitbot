@@ -1,11 +1,14 @@
 from unittest.mock import patch
 import os
 
+import pytest
+
 from gitbot.lib import (
     bump_command,
     bump_version,
     bump_sentry_path,
     extract_author,
+    run,
 )
 
 event = {
@@ -59,3 +62,42 @@ def test_bump_version(mock_bump_path):
         url=os.path.dirname(__file__).rsplit("/", 1)[0],
         dry_run=True,
     )
+
+
+# This test will be skipped if there's no getsentry checkout
+# This test is executed by getsentry's CI
+def test_real_bump_sentry_call(tmpdir):
+    local_getsentry_checkout = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "getsentry")
+    )
+    if not os.path.exists(local_getsentry_checkout):
+        pytest.skip("This test requires a getsentry checkout.")
+
+    # We make a soft clone of it into a tempdir and then try to bump
+    result, text = bump_version(
+        branch="master",
+        # Random sha from Sentry repo
+        ref_sha="ccc86db8a6a2541b5786f76e8461f587a8adca20",
+        # It will soft clone to a tempdir
+        url=local_getsentry_checkout,
+        # This will prevent trying to push
+        dry_run=True,
+        temp_checkout=tmpdir,
+    )
+    assert result is True
+    assert text == "Executed: bin/bump-sentry ccc86db8a6a2541b5786f76e8461f587a8adca20"
+    execution = run("git show -s --oneline", tmpdir)
+    assert (
+        execution.stdout.find(
+            "getsentry/sentry@ccc86db8a6a2541b5786f76e8461f587a8adca20"
+        )
+        > -1
+    )
+    execution = run("git grep ccc86db8a6a2541b5786f76e8461f587a8adca20", tmpdir)
+    split_lines = execution.stdout.splitlines()
+    assert len(split_lines) == 4
+    for line in split_lines:
+        assert (
+            line.find("SENTRY_VERSION_SHA=ccc86db8a6a2541b5786f76e8461f587a8adca20")
+            > -1
+        )
