@@ -133,6 +133,7 @@ def bump_version(
     url=GETSENTRY_REPO_URL,
     dry_run=DRY_RUN,
     temp_checkout=tempfile.mkdtemp(),
+    delete_temp_checkout=True,
 ):
     repo_root = temp_checkout
 
@@ -163,6 +164,9 @@ def bump_version(
             break
         except CommandError:
             run(f"git pull --rebase origin {branch}", cwd=repo_root)
+
+    if delete_temp_checkout:
+        os.rmdir(repo_root)
 
     if not successful_push:
         return False, "Failed to push."

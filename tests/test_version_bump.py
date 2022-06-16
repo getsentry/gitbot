@@ -49,21 +49,6 @@ def test_bump_command_no_author(mock_bump_path):
     ]
 
 
-@patch("gitbot.lib.bump_sentry_path")
-def test_bump_version(mock_bump_path):
-    mock_bump_path.return_value = tests_bump_sentry_path
-    # This will checkout gitbot in a tempdir and try calling bin/bump-sentry
-    bump_version(
-        "master",
-        # Any valid sha is good enough
-        "9962ffff3d0b1973fb05e16cd6a3328c5ecb1401",
-        extract_author(event),
-        # Path to gitbot checkout (i.e. Git top level dir)
-        url=os.path.dirname(__file__).rsplit("/", 1)[0],
-        dry_run=True,
-    )
-
-
 # This test will be skipped if there's no getsentry checkout
 # This test is executed by getsentry's CI
 def test_real_bump_sentry_call(tmpdir):
@@ -83,6 +68,7 @@ def test_real_bump_sentry_call(tmpdir):
         # This will prevent trying to push
         dry_run=True,
         temp_checkout=tmpdir,
+        delete_temp_checkout=False,
     )
     assert result is True
     assert text == "Executed: bin/bump-sentry ccc86db8a6a2541b5786f76e8461f587a8adca20"
