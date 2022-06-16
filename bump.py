@@ -34,18 +34,6 @@ def validate_bump(result, text, tmpdir):
 
 
 def main(branch, getsentry_path):
-    reset_name = (
-        run(
-            "git config --local user.name", cwd=getsentry_path, raise_error=False
-        ).returncode
-        != 0
-    )
-    reset_email = (
-        run(
-            "git config --local user.email", cwd=getsentry_path, raise_error=False
-        ).returncode
-        != 0
-    )
     tmpdir = mkdtemp()
     try:
         # raise Exception()
@@ -60,10 +48,8 @@ def main(branch, getsentry_path):
         validate_bump(result, text, tmpdir)
     finally:
         # This undoes what bump version did
-        if reset_name:
-            run("git config --unset user.name", cwd=getsentry_path, raise_error=False)
-        if reset_email:
-            run("git config --unset user.email", cwd=getsentry_path, raise_error=False)
+        run("git config --unset user.name", cwd=getsentry_path, raise_error=False)
+        run("git config --unset user.email", cwd=getsentry_path, raise_error=False)
         shutil.rmtree(tmpdir)
 
 
