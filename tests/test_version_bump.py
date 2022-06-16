@@ -1,4 +1,7 @@
 from unittest.mock import patch
+import os
+
+import pytest
 
 from gitbot.lib import (
     bump_command,
@@ -46,16 +49,22 @@ def test_bump_command_no_author(mock_bump_path):
     ]
 
 
-# This test will fail if the user cannot checkout getsentry
+# This test will be skipped if there's no getsentry checkout
 # This test is executed by getsentry's CI
 def test_real_bump_sentry_call(tmpdir):
+    local_getsentry_checkout = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "getsentry")
+    )
+    if not os.path.exists(local_getsentry_checkout):
+        pytest.skip("This test requires a getsentry checkout.")
+
     # We make a soft clone of it into a tempdir and then try to bump
     result, text = bump_version(
         branch="master",
         # Random sha from Sentry repo
         ref_sha="ccc86db8a6a2541b5786f76e8461f587a8adca20",
         # It will soft clone to a tempdir
-        url="git@github.com:getsentry/getsentry.git",
+        url=local_getsentry_checkout,
         # This will prevent trying to push
         dry_run=True,
         temp_checkout=tmpdir,
