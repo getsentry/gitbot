@@ -1,9 +1,7 @@
 from unittest.mock import patch
-import os
 
 from gitbot.lib import (
     bump_command,
-    bump_version,
     bump_sentry_path,
     extract_author,
 )
@@ -44,18 +42,3 @@ def test_bump_command_no_author(mock_bump_path):
         tests_bump_sentry_path,
         "foo",
     ]
-
-
-@patch("gitbot.lib.bump_sentry_path")
-def test_bump_version(mock_bump_path):
-    mock_bump_path.return_value = tests_bump_sentry_path
-    # This will checkout gitbot in a tempdir and try calling bin/bump-sentry
-    bump_version(
-        "master",
-        # Any valid sha is good enough
-        "9962ffff3d0b1973fb05e16cd6a3328c5ecb1401",
-        extract_author(event),
-        # Path to gitbot checkout (i.e. Git top level dir)
-        url=os.path.dirname(__file__).rsplit("/", 1)[0],
-        dry_run=True,
-    )

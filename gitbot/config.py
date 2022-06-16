@@ -1,6 +1,5 @@
 import logging
 import os
-from distutils import util
 
 LOGGING_LEVEL = os.environ.get("LOGGING_LEVEL", logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,7 +24,7 @@ COMMITTER_EMAIL = "bot@sentry.io"
 GITBOT_MARKER = "#sync-getsentry"
 
 # App behaviour
-DRY_RUN = bool(util.strtobool(os.environ.get("DRY_RUN", "False")))
+DRY_RUN = os.environ.get("DRY_RUN", "False") == "True"
 ENV = os.environ.get("ENV", "development")
 IS_DEV = ENV == "development"
 
