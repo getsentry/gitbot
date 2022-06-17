@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import hmac
 import hashlib
 import logging
 import os
 import tempfile
 from operator import itemgetter
+from typing import Any
 
 import sentry_sdk
 
@@ -48,7 +51,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def boot():
+def boot() -> None:
     if ENV != "development":
         logger.info(f"Environment: {ENV}")
         logger.info(f"Release: {os.environ['RELEASE']}")
@@ -95,7 +98,7 @@ def boot():
 
 
 # Alias for updating the Sentry and Getsentry repos
-def update_primary_repo(repo):
+def update_primary_repo(repo: str) -> None:
     quiet = LOGGING_LEVEL != "debug"
     if repo == "sentry":
         update_checkout(SENTRY_REPO_URL, SENTRY_CHECKOUT_PATH, quiet)
@@ -103,7 +106,7 @@ def update_primary_repo(repo):
         update_checkout(GETSENTRY_REPO_URL, GETSENTRY_CHECKOUT_PATH, quiet)
 
 
-def respond(data, status_code):
+def respond(data: str | dict[str, Any], status_code: int) -> tuple[str, int]:
     logger.info(data)
     if isinstance(data, str):
         data = {"reason": data}
@@ -114,7 +117,7 @@ def respond(data, status_code):
 
 # Github's UI looks really bad when most responses are 400
 # Let's only turn it red when something actually goes bad
-def process_push():
+def process_push() -> tuple[str, int]:
     """Handle "push" events to master branch"""
     # XXX: On what occassions would we want to use request.args.get("branches")?
     # Pushes to master and test-branch will be acted on
@@ -162,7 +165,7 @@ def process_push():
 
 # Github's UI looks really bad when most responses are 400
 # Let's only turn it red when something actually goes bad
-def process_pull_request():
+def process_pull_request() -> tuple[str, int]:
     """Handle "pull_request" events from PRs with the deploy marker set"""
     data = request.get_json()
     logger.info(data)
@@ -218,7 +221,7 @@ app = Flask(__name__)
 
 
 @app.route("/", methods=["POST"])
-def index():
+def index() -> tuple[str, int]:
     if GITHUB_WEBHOOK_SECRET and not valid_payload(
         GITHUB_WEBHOOK_SECRET,
         request.data,
@@ -236,7 +239,7 @@ def index():
         return respond("Unsupported event type.", status_code=200)
 
 
-def process_git_revert():
+def process_git_revert() -> tuple[str, int]:
     data = request.get_json()
     repo, sha, name = itemgetter("repo", "sha", "name")(data)
     name = data["name"]
@@ -257,8 +260,8 @@ def process_git_revert():
     # "Revert "ref(snql) Update SDK to latest (#26638)""
     subject = execution.stdout.replace('"', "")
     if repo == "getsentry" and subject.startswith("getsentry/sentry@"):
-        body = f"{sha} cannot be reverted because it needs to be reverted in Sentry"
-        return respond(body, status_code=400)
+        msg = f"{sha} cannot be reverted because it needs to be reverted in Sentry"
+        return respond(msg, status_code=400)
 
     run(f"git revert --no-commit {sha}", cwd=tmp_dir)
     run(
@@ -286,7 +289,7 @@ def process_git_revert():
 
 
 @app.route("/api/revert", methods=["POST"])
-def revert():
+def revert() -> tuple[str, int]:
     if GITBOT_API_SECRET and not valid_payload(
         GITBOT_API_SECRET,
         request.data,

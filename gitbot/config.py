@@ -11,7 +11,7 @@ def fetch_secret(client: "secretmanager.SecretManagerService", uri: str) -> str:
     return client.access_secret_version(name=uri).payload.data.decode("UTF-8")
 
 
-def repo_url(repo):
+def repo_url(repo: str) -> str:
     if PAT:
         return f"https://{os.environ.get('GITBOT_USER', 'getsentry-bot')}:{PAT}@github.com/{repo}"
     else:

@@ -13,7 +13,7 @@ logging.getLogger().setLevel("DEBUG")
 logging.basicConfig()
 
 
-def validate_bump(result, text, tmpdir):
+def validate_bump(result: bool, text: str, tmpdir: str) -> None:
     assert result is True
     assert text == "Executed: bin/bump-sentry ccc86db8a6a2541b5786f76e8461f587a8adca20"
     execution = run("git show -s --oneline", tmpdir)
@@ -33,7 +33,7 @@ def validate_bump(result, text, tmpdir):
         )
 
 
-def main(branch, getsentry_path):
+def main(branch: str, getsentry_path: str) -> int:
     tmpdir = mkdtemp()
     try:
         # raise Exception()
@@ -51,6 +51,7 @@ def main(branch, getsentry_path):
         run("git config --unset user.name", cwd=getsentry_path, raise_error=False)
         run("git config --unset user.email", cwd=getsentry_path, raise_error=False)
         shutil.rmtree(tmpdir)
+    return 0
 
 
 if __name__ == "__main__":
