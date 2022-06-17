@@ -6,12 +6,12 @@ logger = logging.getLogger(__name__)
 logger.setLevel(LOGGING_LEVEL)
 
 
-def fetch_secret(client: str, uri: str) -> str:
+def fetch_secret(client: "secretmanager.SecretManagerService", uri: str) -> str:
     logger.info(f"Grabbing secret from {uri}")
     return client.access_secret_version(name=uri).payload.data.decode("UTF-8")
 
 
-def repo_url(repo):
+def repo_url(repo: str) -> str:
     if PAT:
         return f"https://{os.environ.get('GITBOT_USER', 'getsentry-bot')}:{PAT}@github.com/{repo}"
     else:

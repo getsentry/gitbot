@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import contextlib
 import logging
 import os
 import shlex
 import subprocess
 import tempfile
+from typing import Any
 
 from gitbot.config import (
     COMMITTER_EMAIL,
@@ -24,9 +27,11 @@ class CommandError(Exception):
 
 
 def run(
-    cmd, cwd: str = "/tmp", quiet: bool = False, raise_error: bool = True
-) -> object:
-    new_cmd = None
+    cmd: str | list[str],
+    cwd: str = "/tmp",
+    quiet: bool = False,
+    raise_error: bool = True,
+) -> subprocess.CompletedProcess[str]:
     if isinstance(cmd, str):
         new_cmd = cmd.split()
         if ' "' in cmd:
@@ -35,6 +40,8 @@ def run(
             )
     elif isinstance(cmd, list):
         new_cmd = cmd
+    else:
+        raise TypeError(f"expected str/list got: {cmd=}")
 
     # GCR does not scrub the Personal Access Token from the output
     scrub_output = PAT and PAT not in new_cmd
@@ -46,21 +53,24 @@ def run(
             else:
                 _command += f" {part}"
         _command += f" (cwd: {cwd})"
-        if scrub_output:
+        if scrub_output and PAT is not None:
             _command = _command.replace(PAT, "<secret>")
         logger.info(_command)
 
     # Capture the output so you can process it later and to show up in Sentry
     # Redirect stderr to stdout
     execution = subprocess.run(
-        new_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        new_cmd,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        encoding="UTF-8",
     )
 
     output = ""
     if execution.stdout:
-        for line in execution.stdout.splitlines():
-            string = line.decode("utf-8")
-            if scrub_output:
+        for string in execution.stdout.splitlines():
+            if scrub_output and PAT is not None:
                 string = string.replace(PAT, "<secret>")
             output += f"{string}\n"
             if not quiet:
@@ -73,7 +83,7 @@ def run(
     return execution
 
 
-def update_checkout(repo_url, checkout_path, quiet=False):
+def update_checkout(repo_url: str, checkout_path: str, quiet: bool = False) -> None:
     logger.info(f"About to clone/pull {repo_url} to {checkout_path}.")
     if not os.path.exists(checkout_path):
         # We clone before the app is running. Requests will clone from this checkout
@@ -87,7 +97,7 @@ def update_checkout(repo_url, checkout_path, quiet=False):
     run("git pull origin master", cwd=checkout_path, quiet=quiet)
 
 
-def sync_with_upstream(checkout_path, upstream_url):
+def sync_with_upstream(checkout_path: str, upstream_url: str) -> None:
     """Fetch Git changes from upstream repo and push them to origin repo
 
     This helps to bring a test repo to be in sync withs related upstream repo.
@@ -103,7 +113,7 @@ def sync_with_upstream(checkout_path, upstream_url):
     run("git push -f origin master", cwd=checkout_path)
 
 
-def extract_author(data):
+def extract_author(data: dict[str, Any]) -> str | None:
     author_data = data.get("head_commit", {}).get("author", {})
     author_name = author_data.get("name")
     author_email = author_data.get("email")
@@ -114,13 +124,13 @@ def extract_author(data):
     return author
 
 
-def bump_sentry_path():
+def bump_sentry_path() -> str:
     # Allowing changing this via the env variable will allow the getsentry repo to test
     # changes to the official file
     return os.environ.get("GITBOT_BUMP_SENTRY_PATH", "bin/bump-sentry")
 
 
-def bump_command(ref_sha, author=None):
+def bump_command(ref_sha: str, author: str | None = None) -> list[str]:
     cmd = [bump_sentry_path(), ref_sha]
     # Original author will be displayed as author in getsentry/getsentry commits
     if author is not None:
@@ -131,13 +141,13 @@ def bump_command(ref_sha, author=None):
 
 
 def bump_version(
-    branch,
-    ref_sha,
-    author=None,
-    url=GETSENTRY_REPO_URL,
-    dry_run=DRY_RUN,
-    temp_checkout=None,
-):
+    branch: str,
+    ref_sha: str,
+    author: str | None = None,
+    url: str = GETSENTRY_REPO_URL,
+    dry_run: bool = DRY_RUN,
+    temp_checkout: str | None = None,
+) -> tuple[bool, str]:
     with contextlib.ExitStack() as ctx:
         if temp_checkout is not None:
             repo_root = temp_checkout
@@ -179,3 +189,5 @@ def bump_version(
             return False, "Failed to push."
         else:
             return True, f"Executed: {shlex.join(command)}"
+
+    raise AssertionError("unreachable")

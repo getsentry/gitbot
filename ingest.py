@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 #
 # This script can send POST requests to your development set up or the staging instance
+from __future__ import annotations
 import hashlib
 import hmac
 import json
 import logging
 import os
 import sys
+from typing import Any
 
 import requests
 import click
@@ -30,13 +32,15 @@ HOSTS = {
 }
 
 
-def signature(secret, payload):
+def signature(secret: str, payload: dict[str, Any]) -> str:
     return hmac.new(
         secret.encode("utf-8"), json.dumps(payload).encode("utf-8"), hashlib.sha1
     ).hexdigest()
 
 
-def revert_payload_header(repo: str, sha: str, author: str, email: str):
+def revert_payload_header(
+    repo: str, sha: str, author: str, email: str
+) -> tuple[dict[str, str], dict[str, str]]:
     payload = {"repo": repo, "sha": sha, "name": f"{author} <{email}>"}
     header = {}
     if GITBOT_API_SECRET:
@@ -46,7 +50,9 @@ def revert_payload_header(repo: str, sha: str, author: str, email: str):
 
 
 # We pretend the change is produced by Sentry's upstream webhook
-def bump_payload_header(sha: str, author: str, email: str):
+def bump_payload_header(
+    sha: str, author: str, email: str
+) -> tuple[dict[str, Any], dict[str, str]]:
     # XXX: In reality, it would be ideal if we checked Github for the metadata
     payload = {
         "ref": "refs/heads/master",
@@ -76,7 +82,9 @@ def bump_payload_header(sha: str, author: str, email: str):
 @click.option("--sha", help="Sha to act on.")
 @click.option("--author", help="The name of who's making the request.")  # Optional
 @click.option("--email", help="The email of who's making the request.")  # Optional
-def main(host, port, action, repo, sha, author, email):
+def main(
+    host: str, port: str, action: str, repo: str, sha: str, author: str, email: str
+) -> None:
     if action == "reset":
         # This guarantees that this script will hit a fresh remote repo, thus, not failing revert requests
         print(
