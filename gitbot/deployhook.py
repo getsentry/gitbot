@@ -205,7 +205,7 @@ def process_pull_request():
     return respond("Commit not relevant for deploy sync.", status_code=200)
 
 
-def valid_payload(secret: str, payload: str, signature: str) -> bool:
+def valid_payload(secret: str, payload: bytes, signature: str) -> bool:
     # Validate payload signature
     payload_signature = hmac.new(
         secret.encode("utf-8"), payload, hashlib.sha1

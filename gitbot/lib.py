@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import logging
 import os
@@ -24,9 +26,11 @@ class CommandError(Exception):
 
 
 def run(
-    cmd, cwd: str = "/tmp", quiet: bool = False, raise_error: bool = True
-) -> object:
-    new_cmd = None
+    cmd: str | list[str],
+    cwd: str = "/tmp",
+    quiet: bool = False,
+    raise_error: bool = True,
+) -> subprocess.CompletedProcess[str]:
     if isinstance(cmd, str):
         new_cmd = cmd.split()
         if ' "' in cmd:
@@ -35,6 +39,8 @@ def run(
             )
     elif isinstance(cmd, list):
         new_cmd = cmd
+    else:
+        raise TypeError(f"expected str/list got: {cmd=}")
 
     # GCR does not scrub the Personal Access Token from the output
     scrub_output = PAT and PAT not in new_cmd
@@ -46,21 +52,24 @@ def run(
             else:
                 _command += f" {part}"
         _command += f" (cwd: {cwd})"
-        if scrub_output:
+        if scrub_output and PAT is not None:
             _command = _command.replace(PAT, "<secret>")
         logger.info(_command)
 
     # Capture the output so you can process it later and to show up in Sentry
     # Redirect stderr to stdout
     execution = subprocess.run(
-        new_cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        new_cmd,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        encoding="UTF-8",
     )
 
     output = ""
     if execution.stdout:
-        for line in execution.stdout.splitlines():
-            string = line.decode("utf-8")
-            if scrub_output:
+        for string in execution.stdout.splitlines():
+            if scrub_output and PAT is not None:
                 string = string.replace(PAT, "<secret>")
             output += f"{string}\n"
             if not quiet:

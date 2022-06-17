@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(LOGGING_LEVEL)
 
 
-def fetch_secret(client: str, uri: str) -> str:
+def fetch_secret(client: "secretmanager.SecretManagerService", uri: str) -> str:
     logger.info(f"Grabbing secret from {uri}")
     return client.access_secret_version(name=uri).payload.data.decode("UTF-8")
 
