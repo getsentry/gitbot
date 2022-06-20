@@ -193,6 +193,8 @@ def process_pull_request() -> tuple[str, int]:
 
         if pull_request["merged"]:
             return respond("Pull request is already merged.", status_code=200)
+    elif ENV == "staging":
+        return respond("We do not support this for staging.", status_code=200)
 
     body = pull_request["body"] or ""
     if body.find(GITBOT_MARKER) == -1:
