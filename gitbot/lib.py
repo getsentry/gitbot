@@ -172,13 +172,13 @@ def bump_version(
         try:
             command = bump_command(ref_sha, author)
             run(command, cwd=repo_root)
-        except CommandError:
+        except CommandError as e:
             execution = run("git show", cwd=repo_root)
             # e.g. https://github.com/getsentry/getsentry/pull/7672/commits
             if execution.stdout.find(f"getsentry/sentry@{ref_sha}") > -1:
                 logger.info("The developer has manually bumped the version.")
             else:
-                raise Exception("Something went wrong.")
+                raise e
 
         if dry_run:
             push_cmd = f"git push origin --dry-run {branch}"
