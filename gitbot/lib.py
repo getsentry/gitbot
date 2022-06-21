@@ -172,7 +172,7 @@ def bump_version(
         try:
             command = bump_command(ref_sha, author)
             run(command, cwd=repo_root)
-        except CommandError as e:  # noqa: F841
+        except CommandError:
             execution = run("git show", cwd=repo_root)
             # e.g. https://github.com/getsentry/getsentry/pull/7672/commits
             if execution.stdout.find(f"getsentry/sentry@{ref_sha}") > -1:
