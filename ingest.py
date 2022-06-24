@@ -16,7 +16,6 @@ from requests.exceptions import ConnectionError
 
 from gitbot.config import (
     GITBOT_API_SECRET,
-    GITHUB_WEBHOOK_SECRET,
     SENTRY_REPO,
     LOGGING_LEVEL,
 )
@@ -46,31 +45,6 @@ def revert_payload_header(
     if GITBOT_API_SECRET:
         sign = signature(GITBOT_API_SECRET, payload)
         header["X-Signature"] = f"sha1={sign}"
-    return payload, header
-
-
-# We pretend the change is produced by Sentry's upstream webhook
-def bump_payload_header(
-    sha: str, author: str, email: str
-) -> tuple[dict[str, Any], dict[str, str]]:
-    # XXX: In reality, it would be ideal if we checked Github for the metadata
-    payload = {
-        "ref": "refs/heads/master",
-        "repository": {"full_name": "getsentry/sentry"},
-        "head_commit": {
-            "id": sha,
-            "author": {
-                "name": author,
-                "email": email,
-            },
-        },
-    }
-    header = {}
-    if GITHUB_WEBHOOK_SECRET:
-        sign = signature(GITHUB_WEBHOOK_SECRET, payload)
-        header["X-Hub-Signature"] = f"sha1={sign}"
-        header["X-GitHub-Event"] = "push"
-
     return payload, header
 
 
@@ -106,9 +80,6 @@ def main(
     if action == "revert":
         payload, header = revert_payload_header(repo, sha, author, email)
         url = f"{host_url}/api/revert"
-    elif action == "bump":
-        payload, header = bump_payload_header(sha, author, email)
-        url = f"{host_url}/"
     else:
         print("This action won't do anything but an empty POST request.")
         payload = {}

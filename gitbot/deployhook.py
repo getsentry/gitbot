@@ -23,22 +23,15 @@ from gitbot.config import (
     GETSENTRY_REPO,
     GETSENTRY_REPO_URL,
     GITBOT_API_SECRET,
-    GITBOT_MARKER,
     GITHUB_WEBHOOK_SECRET,
-    IS_DEV,
     LOGGING_LEVEL,
     SENTRY_CHECKOUT_PATH,
     SENTRY_REPO,
-    SENTRY_REPO_UPSTREAM,
     SENTRY_REPO_URL,
-    repo_url,
 )
 from gitbot.lib import (
     CommandError,
-    bump_version,
-    extract_author,
     run,
-    sync_with_upstream,
     update_checkout,
 )
 
@@ -115,101 +108,6 @@ def respond(data: str | dict[str, Any], status_code: int) -> tuple[str, int]:
     return jsonify(data), status_code
 
 
-# Github's UI looks really bad when most responses are 400
-# Let's only turn it red when something actually goes bad
-def process_push() -> tuple[str, int]:
-    """Handle "push" events to master branch"""
-    # XXX: On what occassions would we want to use request.args.get("branches")?
-    # Pushes to master and test-branch will be acted on
-    branches = set(
-        f"refs/heads/{x}"
-        for x in (request.args.get("branches") or "master,test-branch").split(",")
-    )
-
-    data = request.get_json()
-    logger.info(data)
-
-    if data.get("ref") not in branches:
-        logger.info(f'{data.get("ref")} not in {branches}')
-        return respond("Commit against untracked branch.", status_code=200)
-
-    repo = data["repository"]["full_name"]
-    ref_sha = data.get("head_commit", {}).get("id")
-
-    updated = True
-    reason = "Commit not relevant for deploy sync."
-    if ref_sha is not None:
-        # Support Sentry fork when running on development mode
-        if (IS_DEV and repo.split("/")[1] == "sentry") or (
-            repo == SENTRY_REPO_UPSTREAM
-        ):
-            updated, reason = bump_version(
-                GETSENTRY_BRANCH, ref_sha, extract_author(data)
-            )
-            # This makes sentry-test-repo always keeping up with Sentry
-            if ENV == "staging":
-                try:
-                    sync_with_upstream(
-                        SENTRY_CHECKOUT_PATH, repo_url("getsentry/sentry")
-                    )
-                except Exception as e:
-                    logger.warn(
-                        "We failed to sync Sentry with Sentry Test Repo (We will keep going)"
-                    )
-                    logger.exception(e)
-        else:
-            reason = "Unknown repository"
-
-    return respond(reason, status_code=200 if updated else 400)
-
-
-# Github's UI looks really bad when most responses are 400
-# Let's only turn it red when something actually goes bad
-def process_pull_request() -> tuple[str, int]:
-    """Handle "pull_request" events from PRs with the deploy marker set"""
-    data = request.get_json()
-    logger.info(data)
-
-    action = data.get("action")
-    if action not in ["synchronize", "opened"]:
-        logger.info(f"Action: '{action}' not in 'synchronize' or 'opened'")
-        return respond("Unsupported action for pull_request event.", status_code=200)
-
-    # Check that the PR is from the same repo
-    pull_request = data["pull_request"]
-    head = pull_request["head"]
-    base = pull_request["base"]
-
-    # No need to make all these checks if we're in development
-    if not IS_DEV:
-        if data["repository"]["full_name"] != SENTRY_REPO_UPSTREAM:
-            return respond("Unknown repository", status_code=200)
-
-        if (
-            head["repo"]["full_name"] != SENTRY_REPO_UPSTREAM
-            or base["repo"]["full_name"] != SENTRY_REPO_UPSTREAM  # noqa: W503
-        ):
-            return respond("Invalid head or base repos.", status_code=200)
-
-        if pull_request["merged"]:
-            return respond("Pull request is already merged.", status_code=200)
-    elif ENV == "staging":
-        return respond("We do not support this for staging.", status_code=200)
-
-    body = pull_request["body"] or ""
-    if body.find(GITBOT_MARKER) == -1:
-        return respond("Deploy marker not found.", status_code=200)
-
-    ref_sha = head["sha"]
-    branch = head["ref"]
-    if ref_sha:
-        # We turn red when the code did not bump
-        updated, reason = bump_version(branch, ref_sha)
-        return respond(reason, status_code=200 if updated else 400)
-
-    return respond("Commit not relevant for deploy sync.", status_code=200)
-
-
 def valid_payload(secret: str, payload: bytes, signature: str) -> bool:
     # Validate payload signature
     payload_signature = hmac.new(
@@ -220,25 +118,6 @@ def valid_payload(secret: str, payload: bytes, signature: str) -> bool:
 
 boot()
 app = Flask(__name__)
-
-
-@app.route("/", methods=["POST"])
-def index() -> tuple[str, int]:
-    if GITHUB_WEBHOOK_SECRET and not valid_payload(
-        GITHUB_WEBHOOK_SECRET,
-        request.data,
-        str(request.headers.get("X-Hub-Signature", "").replace("sha1=", "")),
-    ):
-        return respond("Cannot validate payload signature.", status_code=403)
-
-    event_type = request.headers.get("X-GitHub-Event")
-
-    if event_type == "push":
-        return process_push()
-    elif event_type == "pull_request":
-        return process_pull_request()
-    else:
-        return respond("Unsupported event type.", status_code=200)
 
 
 def process_git_revert() -> tuple[str, int]:
