@@ -167,10 +167,10 @@ def bump_version(
         except CommandError:
             return False, f"Cannot clone branch {branch} from {GETSENTRY_REPO}.\nError: {e}"
 
-        # Sentry needs to be alongside.
+        # Checkout the desired sentry branch.
         try:
             run(
-                f"git clone --depth 1 -b {SENTRY_BRANCH} {SENTRY_REPO_URL} {repo_root}/../sentry",
+                f"git -C ../sentry checkout -b {SENTRY_BRANCH}",
                 cwd=repo_root,
             )
         except CommandError as e:
