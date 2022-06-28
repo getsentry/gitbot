@@ -16,6 +16,9 @@ from gitbot.config import (
     GETSENTRY_REPO,
     LOGGING_LEVEL,
     PAT,
+    SENTRY_BRANCH,
+    SENTRY_REPO,
+    SENTRY_REPO_URL,
 )
 
 logger = logging.getLogger(__name__)
@@ -162,9 +165,16 @@ def bump_version(
                 cwd=repo_root,
             )
         except CommandError:
-            return False, "Cannot clone branch {} from {}.".format(
-                branch, GETSENTRY_REPO
+            return False, f"Cannot clone branch {branch} from {GETSENTRY_REPO}."
+
+        # Sentry needs to be alongside.
+        try:
+            run(
+                f"git clone --depth 1 -b {SENTRY_BRANCH} {SENTRY_REPO_URL} {repo_root}/..",
+                cwd=repo_root,
             )
+        except CommandError:
+            return False, f"Cannot clone branch {branch} from {SENTRY_REPO}."
 
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
