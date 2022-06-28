@@ -170,7 +170,7 @@ def bump_version(
         # Sentry needs to be alongside.
         try:
             run(
-                f"git clone --depth 1 -b {SENTRY_BRANCH} {SENTRY_REPO_URL} {repo_root}/..",
+                f"git clone --depth 1 -b {SENTRY_BRANCH} {SENTRY_REPO_URL} {repo_root}/../sentry",
                 cwd=repo_root,
             )
         except CommandError as e:
