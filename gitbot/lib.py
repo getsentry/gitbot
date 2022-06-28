@@ -165,7 +165,7 @@ def bump_version(
                 cwd=repo_root,
             )
         except CommandError:
-            return False, f"Cannot clone branch {branch} from {GETSENTRY_REPO}."
+            return False, f"Cannot clone branch {branch} from {GETSENTRY_REPO}.\nError: {e}"
 
         # Sentry needs to be alongside.
         try:
@@ -173,8 +173,8 @@ def bump_version(
                 f"git clone --depth 1 -b {SENTRY_BRANCH} {SENTRY_REPO_URL} {repo_root}/..",
                 cwd=repo_root,
             )
-        except CommandError:
-            return False, f"Cannot clone branch {branch} from {SENTRY_REPO}."
+        except CommandError as e:
+            return False, f"Cannot clone branch {SENTRY_BRANCH} from {SENTRY_REPO}.\nError: {e}"
 
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
