@@ -21,6 +21,8 @@ from gitbot.config import (
     SENTRY_REPO_URL,
 )
 
+from sentry_sdk import capture_exception
+
 logger = logging.getLogger(__name__)
 logger.setLevel(LOGGING_LEVEL)
 
@@ -82,6 +84,7 @@ def run(
     execution.stdout = output.strip()
     # If we raise an exception we will see it reported in Sentry and abort code execution
     if execution.returncode != 0 and raise_error:
+        capture_message(output)
         raise CommandError(output)
     return execution
 
