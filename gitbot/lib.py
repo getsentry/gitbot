@@ -170,17 +170,19 @@ def bump_version(
         # Checkout the desired sentry branch.
         try:
             run(
-                f"git -C ../sentry checkout -b {SENTRY_BRANCH}",
+                f"git -C ../sentry checkout {SENTRY_BRANCH}",
                 cwd=repo_root,
             )
         except CommandError as e:
-            return False, f"Cannot clone branch {SENTRY_BRANCH} from {SENTRY_REPO}.\nError: {e}"
+            return False, f"Cannot checkout branch {SENTRY_BRANCH} from {SENTRY_REPO}.\nError: {e}"
 
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
 
         try:
-            command = bump_command(ref_sha, author)
+            # meh ref_sha won't have the necessary stuff...
+            # needs to be SENTRY_BRANCH temporarily, i just need to test the codepath
+            command = bump_command(SENTRY_BRANCH, author)
             run(command, cwd=repo_root)
         except CommandError:
             execution = run("git show", cwd=repo_root)
