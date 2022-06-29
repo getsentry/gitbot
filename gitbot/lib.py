@@ -18,10 +18,9 @@ from gitbot.config import (
     PAT,
     SENTRY_BRANCH,
     SENTRY_REPO,
-    SENTRY_REPO_URL,
 )
 
-from sentry_sdk import capture_exception
+from sentry_sdk import capture_message
 
 logger = logging.getLogger(__name__)
 logger.setLevel(LOGGING_LEVEL)
@@ -167,7 +166,7 @@ def bump_version(
                 f"git clone --depth 1 -b {branch} {url} {repo_root}",
                 cwd=repo_root,
             )
-        except CommandError:
+        except CommandError as e:
             return False, f"Cannot clone branch {branch} from {GETSENTRY_REPO}.\nError: {e}"
 
         # Checkout the desired sentry branch.
