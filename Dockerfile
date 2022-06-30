@@ -1,4 +1,4 @@
-FROM python:3.10.5-slim
+FROM python:3.8.12-slim-buster
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git ssh && \
