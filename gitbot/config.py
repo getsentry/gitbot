@@ -60,9 +60,6 @@ GETSENTRY_BRANCH = "new-frozen-bump-getsentry"
 GETSENTRY_CHECKOUT_PATH = "/tmp/getsentry"
 GETSENTRY_REPO = os.environ.get("GETSENTRY_REPO", "getsentry/getsentry-test-repo")
 GETSENTRY_REPO_URL = repo_url(GETSENTRY_REPO)
-# XXX: SENTRY_BRANCH was only used for testing out frozen bumping sentry
-#      since it obviously can't be merged into master without testing.
-SENTRY_BRANCH = "feat/frozen-dependencies"
 SENTRY_CHECKOUT_PATH = "/tmp/sentry"
 SENTRY_REPO = os.environ.get("SENTRY_REPO", "getsentry/sentry-test-repo")
 SENTRY_REPO_UPSTREAM = os.environ.get("SENTRY_REPO_UPSTREAM", "getsentry/sentry")
