@@ -56,7 +56,7 @@ if os.environ.get("K_SERVICE") and not os.environ.get("FAST_STARTUP"):
 
 
 # Repo related constants
-GETSENTRY_BRANCH = "new-frozen-bump-getsentry"
+GETSENTRY_BRANCH = "master"
 GETSENTRY_CHECKOUT_PATH = "/tmp/getsentry"
 GETSENTRY_REPO = os.environ.get("GETSENTRY_REPO", "getsentry/getsentry-test-repo")
 GETSENTRY_REPO_URL = repo_url(GETSENTRY_REPO)

@@ -16,7 +16,6 @@ from gitbot.config import (
     GETSENTRY_REPO,
     LOGGING_LEVEL,
     PAT,
-    SENTRY_REPO,
 )
 
 logger = logging.getLogger(__name__)
@@ -165,22 +164,11 @@ def bump_version(
         except CommandError as e:
             return False, f"Cannot clone branch {branch} from {GETSENTRY_REPO}.\nError: {e}"
 
-        # Checkout the desired sentry sha.
-        try:
-            run(
-                "git -C ../sentry checkout f3ff7b9c3e8060c7debfdc223af07964ab048c0c",
-                cwd=repo_root,
-            )
-        except CommandError as e:
-            return False, f"Cannot checkout from {SENTRY_REPO}.\nError: {e}"
-
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
 
         try:
-            # meh ref_sha won't have the necessary stuff...
-            # needs to be feat/frozen-dependencies (f3ff7b9c3e8060c7debfdc223af07964ab048c0c) temporarily, i just need to test the codepath
-            command = bump_command("f3ff7b9c3e8060c7debfdc223af07964ab048c0c", author)
+            command = bump_command(ref_sha, author)
             run(command, cwd=repo_root)
         except CommandError:
             execution = run("git show", cwd=repo_root)
