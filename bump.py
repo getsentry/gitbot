@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os.path
 import shutil
 from tempfile import mkdtemp
 from typing import Sequence
@@ -44,6 +45,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Path to getsentry checkout.",
     )
     args = parser.parse_args(argv)
+    args.getsentry_path = os.path.abspath(args.getsentry_path)
     tmpdir = mkdtemp()
     try:
         # raise Exception()
