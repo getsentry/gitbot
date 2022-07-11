@@ -67,7 +67,7 @@ if __name__ == "__main__":
         type=str,
         help="Path to getsentry checkout.",
     )
-        parser.add_argument(
+    parser.add_argument(
         "--sentry-path",
         type=str,
         help="Path to sentry checkout.",
