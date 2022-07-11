@@ -176,7 +176,7 @@ def bump_version(
                 cwd=repo_root,
             )
         except CommandError:
-            return False, f"Cannot clone branch feat/frozen-dependencies from {SENTRY_REPO}."
+            return False, f"Cannot clone branch feat/frozen-dependencies from {SENTRY_REPO_URL}."
 
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
