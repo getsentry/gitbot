@@ -33,7 +33,7 @@ def validate_bump(result: bool, text: str, tmpdir: str) -> None:
         )
 
 
-def main(branch: str, getsentry_path: str) -> int:
+def main(branch: str, getsentry_path: str, sentry_path: str) -> int:
     tmpdir = mkdtemp()
     try:
         # raise Exception()
@@ -44,6 +44,7 @@ def main(branch: str, getsentry_path: str) -> int:
             url=getsentry_path,  # It will soft clone
             dry_run=True,  # This will prevent trying to push
             temp_checkout=tmpdir,  # We pass this value in order to inspect what happened
+            sentry_path=sentry_path,
         )
         validate_bump(result, text, tmpdir)
     finally:
@@ -65,6 +66,11 @@ if __name__ == "__main__":
         "--getsentry-path",
         type=str,
         help="Path to getsentry checkout.",
+    )
+        parser.add_argument(
+        "--sentry-path",
+        type=str,
+        help="Path to sentry checkout.",
     )
     args = parser.parse_args()
     raise SystemExit(main(args.branch, os.path.abspath(args.getsentry_path)))
