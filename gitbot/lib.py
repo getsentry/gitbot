@@ -162,7 +162,6 @@ def bump_version(
         try:
             run(
                 f"git clone --depth 1 -b {branch} {url} {repo_root}",
-                cwd=repo_root,
             )
         except CommandError as e:
             return False, f"Cannot clone branch {branch} from {GETSENTRY_REPO}.\nError: {e}"
@@ -174,8 +173,7 @@ def bump_version(
         # https://github.com/getsentry/getsentry/pull/7587.
         try:
             run(
-                f"git clone --depth 1 -b feat/frozen-dependencies {SENTRY_REPO_URL} {repo_root}/../sentry",
-                cwd=repo_root,
+                f"git clone --depth 1 -b feat/frozen-dependencies {SENTRY_CHECKOUT_PATH} {repo_root}/../sentry",
             )
         except CommandError:
             return False, f"Cannot clone branch feat/frozen-dependencies from {SENTRY_REPO_URL}."
