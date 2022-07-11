@@ -12,25 +12,28 @@ from gitbot.lib import bump_version, run
 logging.getLogger().setLevel("DEBUG")
 logging.basicConfig()
 
+# TODO: replace b1ad2facd059465b344beb075037ecad0aa467bc with
+#       merge sha of https://github.com/getsentry/sentry/pull/34879
+_ref_sha="b1ad2facd059465b344beb075037ecad0aa467bc"
+
 
 def validate_bump(result: bool, text: str, tmpdir: str) -> None:
     assert result is True
-    # TODO: replace b1ad2facd059465b344beb075037ecad0aa467bc with
-    #       merge sha of https://github.com/getsentry/sentry/pull/34879
-    assert text == "Executed: bin/bump-sentry b1ad2facd059465b344beb075037ecad0aa467bc"
+
+    assert text == f"Executed: bin/bump-sentry {_ref_sha}"
     execution = run("git show -s --oneline", tmpdir)
     assert (
         execution.stdout.find(
-            "getsentry/sentry@b1ad2facd059465b344beb075037ecad0aa467bc"
+            f"getsentry/sentry@{_ref_sha}"
         )
         > -1
     )
-    execution = run("git grep b1ad2facd059465b344beb075037ecad0aa467bc", tmpdir)
+    execution = run(f"git grep {_ref_sha}", tmpdir)
     split_lines = execution.stdout.splitlines()
     assert len(split_lines) == 4
     for line in split_lines:
         assert (
-            line.find("SENTRY_VERSION_SHA=b1ad2facd059465b344beb075037ecad0aa467bc")
+            line.find(f"SENTRY_VERSION_SHA={_ref_sha}")
             > -1
         )
 
@@ -42,7 +45,7 @@ def main(branch: str, getsentry_path: str, sentry_path: str) -> int:
         # We make a soft clone of it into a tempdir and then try to bump
         result, text = bump_version(
             branch=branch,
-            ref_sha="ccc86db8a6a2541b5786f76e8461f587a8adca20",  # Random sha from Sentry repo
+            ref_sha=_ref_sha,  # Random sha from Sentry repo
             url=getsentry_path,  # It will soft clone
             dry_run=True,  # This will prevent trying to push
             temp_checkout=tmpdir,  # We pass this value in order to inspect what happened
