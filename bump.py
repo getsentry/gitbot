@@ -73,4 +73,8 @@ if __name__ == "__main__":
         help="Path to sentry checkout.",
     )
     args = parser.parse_args()
-    raise SystemExit(main(args.branch, os.path.abspath(args.getsentry_path)))
+    raise SystemExit(main(
+        args.branch,
+        os.path.abspath(args.getsentry_path),
+        os.path.abspath(args.sentry_path),
+    ))
