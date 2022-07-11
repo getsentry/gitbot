@@ -33,7 +33,9 @@ def validate_bump(result: bool, text: str, temp_checkout: str) -> None:
     assert split_lines == [
         f"cloudbuild.yaml:            '--build-arg', 'SENTRY_VERSION_SHA={_ref_sha}',",
         f"docker/frontend_cloudbuild.yaml:      '--build-arg', 'SENTRY_VERSION_SHA={_ref_sha}',",
-        f"sentry-version:{_ref_sha}",
+        f'sentry-requirements-dev-frozen.txt:# DO NOT MODIFY. This file was generated with `python -m bin.bump_sentry {_ref_sha}`.',
+        f'sentry-requirements-frozen.txt:# DO NOT MODIFY. This file was generated with `python -m bin.bump_sentry {_ref_sha}`.',
+        f'sentry-version:{_ref_sha}',
     ], split_lines
 
 
