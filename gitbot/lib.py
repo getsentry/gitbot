@@ -156,6 +156,8 @@ def bump_version(
             # Once we exit the with statement the temporary directory witll be deleted
             repo_root = ctx.enter_context(tempfile.TemporaryDirectory())
 
+        repo_root = f"{repo_root}/getsentry"
+
         # The branch has to exist in the remote repo
         try:
             run(
@@ -172,7 +174,7 @@ def bump_version(
         # https://github.com/getsentry/getsentry/pull/7587.
         try:
             run(
-                f"git clone --depth 1 -b feat/frozen-dependencies {SENTRY_REPO_URL} {repo_root}/..",
+                f"git clone --depth 1 -b feat/frozen-dependencies {SENTRY_REPO_URL} {repo_root}/../sentry",
                 cwd=repo_root,
             )
         except CommandError:
