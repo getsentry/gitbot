@@ -16,7 +16,7 @@ from gitbot.config import (
     GETSENTRY_REPO,
     LOGGING_LEVEL,
     PAT,
-    SENTRY_CHECKOUT_PATH,
+    SENTRY_REPO_URL,
 )
 
 logger = logging.getLogger(__name__)
@@ -171,12 +171,17 @@ def bump_version(
         # redist. dev environments.
         # XXX: This is feat/frozen-dependencies temporarily just to test
         # https://github.com/getsentry/getsentry/pull/7587.
+        # NOTE: Unfortunately we can't use SENTRY_CHECKOUT_PATH for a
+        #       shallow clone for gitbot integration tests in getsentry,
+        #       unless we also clone sentry there. This would be a good
+        #       optimization, but I want to delete all this code soon in
+        #       favor of GHA.
         try:
             run(
-                f"git clone --depth 1 -b feat/frozen-dependencies {SENTRY_CHECKOUT_PATH} {repo_root}/../sentry",
+                f"git clone --depth 1 -b feat/frozen-dependencies {SENTRY_REPO_URL} {repo_root}/../sentry",
             )
         except CommandError:
-            return False, f"Cannot clone branch feat/frozen-dependencies from {SENTRY_CHECKOUT_PATH}."
+            return False, f"Cannot clone branch feat/frozen-dependencies from {SENTRY_REPO_URL}."
 
         run(f"ls -lah {repo_root}/..")
 
