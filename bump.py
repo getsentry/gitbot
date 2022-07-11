@@ -16,6 +16,9 @@ logging.basicConfig()
 #       merge sha of https://github.com/getsentry/sentry/pull/34879
 _ref_sha="b1ad2facd059465b344beb075037ecad0aa467bc"
 
+# TODO: also replace 4020db731c2d0be72b6df589e2e97859b92ad824
+#       with another sentry sha ahead of b1ad2facd
+
 
 def validate_bump(result: bool, text: str, temp_checkout: str) -> None:
     assert result is True
@@ -46,7 +49,7 @@ def main(branch: str, getsentry_path: str, sentry_path: str) -> int:
         # We make a soft clone of it into a tempdir and then try to bump
         result, text = bump_version(
             branch=branch,
-            ref_sha=_ref_sha,  # Random sha from Sentry repo
+            ref_sha="4020db731c2d0be72b6df589e2e97859b92ad824",
             url=getsentry_path,  # It will soft clone
             dry_run=True,  # This will prevent trying to push
             temp_checkout=temp_checkout,
