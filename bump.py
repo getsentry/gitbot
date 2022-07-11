@@ -17,18 +17,18 @@ logging.basicConfig()
 _ref_sha="b1ad2facd059465b344beb075037ecad0aa467bc"
 
 
-def validate_bump(result: bool, text: str, tmpdir: str) -> None:
+def validate_bump(result: bool, text: str, temp_checkout: str) -> None:
     assert result is True
 
     assert text == f"Executed: bin/bump-sentry {_ref_sha}"
-    execution = run("git show -s --oneline", tmpdir)
+    execution = run("git show -s --oneline", temp_checkout)
     assert (
         execution.stdout.find(
             f"getsentry/sentry@{_ref_sha}"
         )
         > -1
     )
-    execution = run(f"git grep {_ref_sha}", tmpdir)
+    execution = run(f"git grep {_ref_sha}", temp_checkout)
     split_lines = execution.stdout.splitlines()
     assert len(split_lines) == 4
     for line in split_lines:
@@ -40,6 +40,7 @@ def validate_bump(result: bool, text: str, tmpdir: str) -> None:
 
 def main(branch: str, getsentry_path: str, sentry_path: str) -> int:
     tmpdir = mkdtemp()
+    temp_checkout = f"{tmpdir}/getsentry"
     try:
         # raise Exception()
         # We make a soft clone of it into a tempdir and then try to bump
@@ -48,14 +49,14 @@ def main(branch: str, getsentry_path: str, sentry_path: str) -> int:
             ref_sha=_ref_sha,  # Random sha from Sentry repo
             url=getsentry_path,  # It will soft clone
             dry_run=True,  # This will prevent trying to push
-            temp_checkout=tmpdir,  # We pass this value in order to inspect what happened
+            temp_checkout=temp_checkout,
             sentry_path=sentry_path,
         )
-        validate_bump(result, text, tmpdir)
+        validate_bump(result, text, temp_checkout)
     finally:
         # This undoes what bump version did
-        run("git config --unset user.name", cwd=getsentry_path, raise_error=False)
-        run("git config --unset user.email", cwd=getsentry_path, raise_error=False)
+        run("git config --unset user.name", cwd=temp_checkout, raise_error=False)
+        run("git config --unset user.email", cwd=temp_checkout, raise_error=False)
         shutil.rmtree(tmpdir)
     return 0
 

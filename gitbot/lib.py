@@ -155,8 +155,7 @@ def bump_version(
         else:
             # Once we exit the with statement the temporary directory witll be deleted
             repo_root = ctx.enter_context(tempfile.TemporaryDirectory())
-
-        repo_root = f"{repo_root}/getsentry"
+            repo_root = f"{repo_root}/getsentry"
 
         # The branch has to exist in the remote repo
         try:
@@ -169,8 +168,9 @@ def bump_version(
         # Sentry needs to be alongside so that we have tools/.
         # Hopefully all this code is removed before we move tools to
         # redist. dev environments.
-        # XXX: This is feat/frozen-dependencies temporarily just to test
-        # https://github.com/getsentry/getsentry/pull/7587.
+        # TODO: This is feat/frozen-dependencies temporarily just to test
+        # https://github.com/getsentry/getsentry/pull/7587. Change it
+        # back to master.
         try:
             run(
                 f"git clone --depth 1 -b feat/frozen-dependencies {sentry_path} {repo_root}/../sentry",
