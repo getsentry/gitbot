@@ -15,20 +15,22 @@ logging.basicConfig()
 
 def validate_bump(result: bool, text: str, tmpdir: str) -> None:
     assert result is True
-    assert text == "Executed: bin/bump-sentry ccc86db8a6a2541b5786f76e8461f587a8adca20"
+    # TODO: replace b1ad2facd059465b344beb075037ecad0aa467bc with
+    #       merge sha of https://github.com/getsentry/sentry/pull/34879
+    assert text == "Executed: bin/bump-sentry b1ad2facd059465b344beb075037ecad0aa467bc"
     execution = run("git show -s --oneline", tmpdir)
     assert (
         execution.stdout.find(
-            "getsentry/sentry@ccc86db8a6a2541b5786f76e8461f587a8adca20"
+            "getsentry/sentry@b1ad2facd059465b344beb075037ecad0aa467bc"
         )
         > -1
     )
-    execution = run("git grep ccc86db8a6a2541b5786f76e8461f587a8adca20", tmpdir)
+    execution = run("git grep b1ad2facd059465b344beb075037ecad0aa467bc", tmpdir)
     split_lines = execution.stdout.splitlines()
     assert len(split_lines) == 4
     for line in split_lines:
         assert (
-            line.find("SENTRY_VERSION_SHA=ccc86db8a6a2541b5786f76e8461f587a8adca20")
+            line.find("SENTRY_VERSION_SHA=b1ad2facd059465b344beb075037ecad0aa467bc")
             > -1
         )
 
