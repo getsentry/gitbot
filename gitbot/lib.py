@@ -16,7 +16,7 @@ from gitbot.config import (
     GETSENTRY_REPO,
     LOGGING_LEVEL,
     PAT,
-    SENTRY_REPO_URL,
+    SENTRY_CHECKOUT_PATH,
 )
 
 logger = logging.getLogger(__name__)
@@ -164,7 +164,7 @@ def bump_version(
                 f"git clone --depth 1 -b {branch} {url} {repo_root}",
             )
         except CommandError as e:
-            return False, f"Cannot clone branch {branch} from {GETSENTRY_REPO}.\nError: {e}"
+            return False, f"Cannot clone branch {branch} from {url}.\nError: {e}"
 
         # Sentry needs to be alongside so that we have tools/.
         # Hopefully all this code is removed before we move tools to
@@ -176,7 +176,7 @@ def bump_version(
                 f"git clone --depth 1 -b feat/frozen-dependencies {SENTRY_CHECKOUT_PATH} {repo_root}/../sentry",
             )
         except CommandError:
-            return False, f"Cannot clone branch feat/frozen-dependencies from {SENTRY_REPO_URL}."
+            return False, f"Cannot clone branch feat/frozen-dependencies from {SENTRY_CHECKOUT_PATH}."
 
         run(f"ls -lah {repo_root}/..")
 
