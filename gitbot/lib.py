@@ -178,6 +178,8 @@ def bump_version(
         except CommandError:
             return False, f"Cannot clone branch feat/frozen-dependencies from {SENTRY_REPO_URL}."
 
+        run(f"ls -lah {repo_root}/..")
+
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
 
