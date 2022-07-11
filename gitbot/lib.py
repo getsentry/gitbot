@@ -16,6 +16,7 @@ from gitbot.config import (
     GETSENTRY_REPO,
     LOGGING_LEVEL,
     PAT,
+    SENTRY_REPO_URL,
 )
 
 logger = logging.getLogger(__name__)
@@ -163,6 +164,19 @@ def bump_version(
             )
         except CommandError as e:
             return False, f"Cannot clone branch {branch} from {GETSENTRY_REPO}.\nError: {e}"
+
+        # Sentry needs to be alongside so that we have tools/.
+        # Hopefully all this code is removed before we move tools to
+        # redist. dev environments.
+        # XXX: This is feat/frozen-dependencies temporarily just to test
+        # https://github.com/getsentry/getsentry/pull/7587.
+        try:
+            run(
+                f"git clone --depth 1 -b feat/frozen-dependencies {SENTRY_REPO_URL} {repo_root}/..",
+                cwd=repo_root,
+            )
+        except CommandError:
+            return False, f"Cannot clone branch feat/frozen-dependencies from {SENTRY_REPO}."
 
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
