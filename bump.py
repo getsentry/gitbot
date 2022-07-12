@@ -15,9 +15,9 @@ from gitbot.lib import bump_version, run
 logging.getLogger().setLevel("DEBUG")
 logging.basicConfig()
 
-# TODO: replace 4020db731c2d0be72b6df589e2e97859b92ad824 with
+# TODO: replace 956384a31b589e41534ce47b4ea9018e4d4003e9 with
 #       merge sha of https://github.com/getsentry/sentry/pull/34879
-_ref_sha = "4020db731c2d0be72b6df589e2e97859b92ad824"
+_ref_sha = "956384a31b589e41534ce47b4ea9018e4d4003e9"
 
 
 def validate_bump(result: bool, text: str, temp_checkout: str) -> None:
