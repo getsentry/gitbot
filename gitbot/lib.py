@@ -13,9 +13,9 @@ from gitbot.config import (
     COMMITTER_NAME,
     DRY_RUN,
     GETSENTRY_REPO_URL,
-    GETSENTRY_REPO,
     LOGGING_LEVEL,
     PAT,
+    SENTRY_CHECKOUT_PATH,
 )
 
 logger = logging.getLogger(__name__)
@@ -147,6 +147,7 @@ def bump_version(
     url: str = GETSENTRY_REPO_URL,
     dry_run: bool = DRY_RUN,
     temp_checkout: str | None = None,
+    sentry_path: str = SENTRY_CHECKOUT_PATH,
 ) -> tuple[bool, str]:
     with contextlib.ExitStack() as ctx:
         if temp_checkout is not None:
@@ -154,17 +155,25 @@ def bump_version(
         else:
             # Once we exit the with statement the temporary directory witll be deleted
             repo_root = ctx.enter_context(tempfile.TemporaryDirectory())
+            repo_root = f"{repo_root}/getsentry"
 
         # The branch has to exist in the remote repo
         try:
             run(
                 f"git clone --depth 1 -b {branch} {url} {repo_root}",
-                cwd=repo_root,
+            )
+        except CommandError as e:
+            return False, f"Cannot clone branch {branch} from {url}.\nError: {e}"
+
+        # Sentry needs to be alongside so that we have tools/.
+        # Hopefully all this code is removed before we move tools to
+        # redist. dev environments.
+        try:
+            run(
+                f"git clone --depth 1 -b master {sentry_path} {repo_root}/../sentry",
             )
         except CommandError:
-            return False, "Cannot clone branch {} from {}.".format(
-                branch, GETSENTRY_REPO
-            )
+            return False, f"Cannot clone branch feat/frozen-dependencies from {sentry_path}."
 
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
