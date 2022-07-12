@@ -170,10 +170,10 @@ def bump_version(
         # redist. dev environments.
         try:
             run(
-                f"ln -sf {sentry_path} {repo_root}/../sentry",
+                f"git clone --depth 1 -b master {sentry_path} {repo_root}/../sentry",
             )
-        except CommandError as e:
-            return False, f"Error: {e}"
+        except CommandError:
+            return False, f"Cannot clone branch feat/frozen-dependencies from {sentry_path}."
 
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
