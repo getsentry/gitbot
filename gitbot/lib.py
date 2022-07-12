@@ -16,6 +16,7 @@ from gitbot.config import (
     LOGGING_LEVEL,
     PAT,
     SENTRY_CHECKOUT_PATH,
+    SENTRY_REPO_URL,
 )
 
 logger = logging.getLogger(__name__)
@@ -168,6 +169,7 @@ def bump_version(
         # Sentry needs to be alongside so that we have tools/.
         # Hopefully all this code is removed before we move tools to
         # redist. dev environments.
+        update_checkout(SENTRY_REPO_URL, sentry_path)
         try:
             run(
                 f"git clone --depth 1 -b master {sentry_path} {repo_root}/../sentry",
