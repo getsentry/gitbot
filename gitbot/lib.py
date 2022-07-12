@@ -16,6 +16,7 @@ from gitbot.config import (
     LOGGING_LEVEL,
     PAT,
     SENTRY_CHECKOUT_PATH,
+    SENTRY_REPO_URL,
 )
 
 logger = logging.getLogger(__name__)
@@ -168,12 +169,13 @@ def bump_version(
         # Sentry needs to be alongside so that we have tools/.
         # Hopefully all this code is removed before we move tools to
         # redist. dev environments.
+        update_checkout(SENTRY_REPO_URL, sentry_path)
         try:
             run(
-                f"ln -sf {sentry_path} {repo_root}/../sentry",
+                f"git clone --depth 1 -b master {sentry_path} {repo_root}/../sentry",
             )
-        except CommandError as e:
-            return False, f"Error: {e}"
+        except CommandError:
+            return False, f"Cannot clone branch feat/frozen-dependencies from {sentry_path}."
 
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
