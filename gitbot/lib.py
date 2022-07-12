@@ -168,17 +168,12 @@ def bump_version(
         # Sentry needs to be alongside so that we have tools/.
         # Hopefully all this code is removed before we move tools to
         # redist. dev environments.
-        # TODO: This is feat/frozen-dependencies temporarily just to test
-        # https://github.com/getsentry/getsentry/pull/7587. Change it
-        # back to master.
         try:
             run(
-                f"git clone --depth 1 -b feat/frozen-dependencies {sentry_path} {repo_root}/../sentry",
+                f"git clone --depth 1 -b master {sentry_path} {repo_root}/../sentry",
             )
         except CommandError:
             return False, f"Cannot clone branch feat/frozen-dependencies from {sentry_path}."
-
-        run(f"ls -lah {repo_root}/..")
 
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
