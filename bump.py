@@ -15,7 +15,7 @@ from gitbot.lib import bump_version, run
 logging.getLogger().setLevel("DEBUG")
 logging.basicConfig()
 
-_ref_sha = "b470cadee3b27d936de9943e5c5166c90d113da4"
+_ref_sha = "762473598f112b3333d7af37bc9aa2ac65be5725"
 
 
 def validate_bump(result: bool, text: str, temp_checkout: str) -> None:
