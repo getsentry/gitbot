@@ -15,7 +15,7 @@ from gitbot.lib import bump_version, run
 logging.getLogger().setLevel("DEBUG")
 logging.basicConfig()
 
-_ref_sha = "762473598f112b3333d7af37bc9aa2ac65be5725"
+_ref_sha = "b470cadee3b27d936de9943e5c5166c90d113da4"
 
 
 def validate_bump(result: bool, text: str, temp_checkout: str) -> None:
@@ -23,17 +23,15 @@ def validate_bump(result: bool, text: str, temp_checkout: str) -> None:
 
     assert text == f"Executed: bin/bump-sentry {_ref_sha}"
     execution = run("git show -s --oneline", temp_checkout)
-    assert (
-        f"getsentry/sentry@{_ref_sha}" in execution.stdout
-    ), execution.stdout
+    assert f"getsentry/sentry@{_ref_sha}" in execution.stdout, execution.stdout
     execution = run(f"git grep {_ref_sha}", temp_checkout)
     split_lines = execution.stdout.splitlines()
     assert split_lines == [
         f"cloudbuild.yaml:            '--build-arg', 'SENTRY_VERSION_SHA={_ref_sha}',",
         f"docker/frontend_cloudbuild.yaml:      '--build-arg', 'SENTRY_VERSION_SHA={_ref_sha}',",
-        f'sentry-requirements-dev-frozen.txt:# DO NOT MODIFY. This file was generated with `python -m bin.bump_sentry {_ref_sha}`.',
-        f'sentry-requirements-frozen.txt:# DO NOT MODIFY. This file was generated with `python -m bin.bump_sentry {_ref_sha}`.',
-        f'sentry-version:{_ref_sha}',
+        f"sentry-requirements-dev-frozen.txt:# DO NOT MODIFY. This file was generated with `python -m bin.bump_sentry {_ref_sha}`.",
+        f"sentry-requirements-frozen.txt:# DO NOT MODIFY. This file was generated with `python -m bin.bump_sentry {_ref_sha}`.",
+        f"sentry-version:{_ref_sha}",
     ], split_lines
 
 
