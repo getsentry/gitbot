@@ -31,14 +31,11 @@ from gitbot.config import (
     SENTRY_REPO,
     SENTRY_REPO_UPSTREAM,
     SENTRY_REPO_URL,
-    repo_url,
 )
 from gitbot.lib import (
     CommandError,
     bump_version,
-    extract_author,
     run,
-    sync_with_upstream,
     update_checkout,
 )
 
@@ -117,54 +114,6 @@ def respond(data: str | dict[str, Any], status_code: int) -> tuple[str, int]:
 
 # Github's UI looks really bad when most responses are 400
 # Let's only turn it red when something actually goes bad
-def process_push() -> tuple[str, int]:
-    """Handle "push" events to master branch"""
-    # XXX: On what occassions would we want to use request.args.get("branches")?
-    # Pushes to master and test-branch will be acted on
-    branches = set(
-        f"refs/heads/{x}"
-        for x in (request.args.get("branches") or "master,test-branch").split(",")
-    )
-
-    data = request.get_json()
-    logger.info(data)
-
-    if data.get("ref") not in branches:
-        logger.info(f'{data.get("ref")} not in {branches}')
-        return respond("Commit against untracked branch.", status_code=200)
-
-    repo = data["repository"]["full_name"]
-    ref_sha = data.get("head_commit", {}).get("id")
-
-    updated = True
-    reason = "Commit not relevant for deploy sync."
-    if ref_sha is not None:
-        # Support Sentry fork when running on development mode
-        if (IS_DEV and repo.split("/")[1] == "sentry") or (
-            repo == SENTRY_REPO_UPSTREAM
-        ):
-            updated, reason = bump_version(
-                GETSENTRY_BRANCH, ref_sha, extract_author(data)
-            )
-            # This makes sentry-test-repo always keeping up with Sentry
-            if ENV == "staging":
-                try:
-                    sync_with_upstream(
-                        SENTRY_CHECKOUT_PATH, repo_url("getsentry/sentry")
-                    )
-                except Exception as e:
-                    logger.warn(
-                        "We failed to sync Sentry with Sentry Test Repo (We will keep going)"
-                    )
-                    logger.exception(e)
-        else:
-            reason = "Unknown repository"
-
-    return respond(reason, status_code=200 if updated else 400)
-
-
-# Github's UI looks really bad when most responses are 400
-# Let's only turn it red when something actually goes bad
 def process_pull_request() -> tuple[str, int]:
     """Handle "pull_request" events from PRs with the deploy marker set"""
     data = request.get_json()
@@ -233,9 +182,7 @@ def index() -> tuple[str, int]:
 
     event_type = request.headers.get("X-GitHub-Event")
 
-    if event_type == "push":
-        return process_push()
-    elif event_type == "pull_request":
+    if event_type == "pull_request":
         return process_pull_request()
     else:
         return respond("Unsupported event type.", status_code=200)
