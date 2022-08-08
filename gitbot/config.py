@@ -1,6 +1,6 @@
 import logging
 import os
-from models import RepoUrl
+from gitbot.models import RepoUrl
 
 LOGGING_LEVEL = os.environ.get("LOGGING_LEVEL", logging.INFO)
 logger = logging.getLogger(__name__)
