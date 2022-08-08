@@ -7,6 +7,7 @@ import shlex
 import subprocess
 import tempfile
 from typing import Any
+from models import RepoUrl
 
 from gitbot.config import (
     COMMITTER_EMAIL,
@@ -84,11 +85,11 @@ def run(
     return execution
 
 
-def update_checkout(repo_url: str, checkout_path: str, quiet: bool = False) -> None:
+def update_checkout(repo_url: RepoUrl, checkout_path: str, quiet: bool = False) -> None:
     logger.info(f"About to clone/pull {repo_url} to {checkout_path}.")
     if not os.path.exists(checkout_path):
         # We clone before the app is running. Requests will clone from this checkout
-        run(f"git clone {repo_url} {checkout_path}", quiet=quiet)
+        run(f"git clone {repo_url.get_secret_value()} {checkout_path}", quiet=quiet)
         # This silences some Git hints. This is the recommended default setting
         run("git config pull.rebase false", cwd=checkout_path, quiet=quiet)
 
@@ -145,7 +146,7 @@ def bump_version(
     branch: str,
     ref_sha: str,
     author: str | None = None,
-    url: str = GETSENTRY_REPO_URL,
+    url: RepoUrl = GETSENTRY_REPO_URL,
     dry_run: bool = DRY_RUN,
     temp_checkout: str | None = None,
     sentry_path: str = SENTRY_CHECKOUT_PATH,
@@ -161,7 +162,7 @@ def bump_version(
         # The branch has to exist in the remote repo
         try:
             run(
-                f"git clone --depth 1 -b {branch} {url} {repo_root}",
+                f"git clone --depth 1 -b {branch} {url.get_secret_value()} {repo_root}",
             )
         except CommandError as e:
             return False, f"Cannot clone branch {branch} from {url}.\nError: {e}"
@@ -175,7 +176,10 @@ def bump_version(
                 f"git clone --depth 1 -b master {sentry_path} {repo_root}/../sentry",
             )
         except CommandError:
-            return False, f"Cannot clone branch feat/frozen-dependencies from {sentry_path}."
+            return (
+                False,
+                f"Cannot clone branch feat/frozen-dependencies from {sentry_path}.",
+            )
 
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)

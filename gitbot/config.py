@@ -1,5 +1,6 @@
 import logging
 import os
+from models import RepoUrl
 
 LOGGING_LEVEL = os.environ.get("LOGGING_LEVEL", logging.INFO)
 logger = logging.getLogger(__name__)
@@ -11,11 +12,13 @@ def fetch_secret(client: "secretmanager.SecretManagerService", uri: str) -> str:
     return client.access_secret_version(name=uri).payload.data.decode("UTF-8")
 
 
-def repo_url(repo: str) -> str:
+def repo_url(repo: str) -> RepoUrl:
     if PAT:
-        return f"https://{os.environ.get('GITBOT_USER', 'getsentry-bot')}:{PAT}@github.com/{repo}"
+        return RepoUrl(
+            repo=repo, user=os.environ.get("GITBOT_USER", "getsentry-bot"), pat=PAT
+        )
     else:
-        return f"git@github.com:/{repo}"
+        return RepoUrl(repo=repo)
 
 
 COMMITTER_NAME = "Sentry Bot"
@@ -53,7 +56,6 @@ if os.environ.get("K_SERVICE") and not os.environ.get("FAST_STARTUP"):
     GITBOT_API_SECRET = fetch_secret(
         client, "projects/sentry-dev-tooling/secrets/GitbotSecret/versions/1"
     )
-
 
 # Repo related constants
 GETSENTRY_BRANCH = "master"
