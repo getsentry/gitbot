@@ -7,7 +7,7 @@ import shlex
 import subprocess
 import tempfile
 from typing import Any
-from models import RepoUrl
+from gitbot.models import RepoUrl
 
 from gitbot.config import (
     COMMITTER_EMAIL,
