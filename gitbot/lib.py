@@ -6,7 +6,6 @@ import os
 import shlex
 import subprocess
 import tempfile
-from typing import Any
 
 from gitbot.config import (
     COMMITTER_EMAIL,
@@ -98,53 +97,19 @@ def update_checkout(repo_url: str, checkout_path: str, quiet: bool = False) -> N
     run("git pull origin master", cwd=checkout_path, quiet=quiet)
 
 
-def sync_with_upstream(checkout_path: str, upstream_url: str) -> None:
-    """Fetch Git changes from upstream repo and push them to origin repo
-
-    This helps to bring a test repo to be in sync withs related upstream repo.
-    Useful for staging set up.
-    """
-    try:
-        run("git remote get-url upstream", cwd=checkout_path)
-    except CommandError:
-        run(f"git remote add upstream {upstream_url}", cwd=checkout_path)
-
-    run("git fetch upstream master", cwd=checkout_path)
-    run("git reset --hard upstream/master", cwd=checkout_path)
-    run("git push -f origin master", cwd=checkout_path)
-
-
-def extract_author(data: dict[str, Any]) -> str | None:
-    author_data = data.get("head_commit", {}).get("author", {})
-    author_name = author_data.get("name")
-    author_email = author_data.get("email")
-    if author_name and author_email:
-        author = f"{author_name} <{author_email}>"
-    else:
-        author = None
-    return author
-
-
 def bump_sentry_path() -> str:
     # Allowing changing this via the env variable will allow the getsentry repo to test
     # changes to the official file
     return os.environ.get("GITBOT_BUMP_SENTRY_PATH", "bin/bump-sentry")
 
 
-def bump_command(ref_sha: str, author: str | None = None) -> list[str]:
-    cmd = [bump_sentry_path(), ref_sha]
-    # Original author will be displayed as author in getsentry/getsentry commits
-    if author is not None:
-        # fmt: off
-        cmd += ["--author", author.replace('"', '')]
-        # fmt: on
-    return cmd
+def bump_command(ref_sha: str) -> list[str]:
+    return [bump_sentry_path(), ref_sha]
 
 
 def bump_version(
     branch: str,
     ref_sha: str,
-    author: str | None = None,
     url: str = GETSENTRY_REPO_URL,
     dry_run: bool = DRY_RUN,
     temp_checkout: str | None = None,
@@ -175,13 +140,16 @@ def bump_version(
                 f"git clone --depth 1 -b master {sentry_path} {repo_root}/../sentry",
             )
         except CommandError:
-            return False, f"Cannot clone branch feat/frozen-dependencies from {sentry_path}."
+            return (
+                False,
+                f"Cannot clone branch feat/frozen-dependencies from {sentry_path}.",
+            )
 
         run(f"git config user.name {COMMITTER_NAME}", cwd=repo_root)
         run(f"git config user.email {COMMITTER_EMAIL}", cwd=repo_root)
 
         try:
-            command = bump_command(ref_sha, author)
+            command = bump_command(ref_sha)
             run(command, cwd=repo_root)
         except CommandError:
             execution = run("git show", cwd=repo_root)
