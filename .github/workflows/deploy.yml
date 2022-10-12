@@ -33,18 +33,18 @@ jobs:
         id: info
         run: |-
           if [ ${{ github.event.inputs.environment }} == 'production' ]; then
-            echo "::set-output name=service::sentry-deploy-sync-hook"
-            echo "::set-output name=environment::${{ github.event.inputs.environment }}"
+            echo "service=sentry-deploy-sync-hook" >> "$GITHUB_OUTPUT"
+            echo "environment=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
             if [ ${{ github.ref }} != "refs/heads/master" ]; then
               >&2 echo "We only allow deployments to production from the master branch."
               exit 1
             fi
           else
-            echo "::set-output name=service::sentry-deploy-sync-hook-staging"
-            echo "::set-output name=environment::staging"
+            echo "service=sentry-deploy-sync-hook-staging" >> "$GITHUB_OUTPUT"
+            echo "environment=staging" >> "$GITHUB_OUTPUT"
           fi
           RELEASE=$(./release_version.sh)
-          echo "::set-output name=release::${RELEASE}"
+          echo "release=${RELEASE}" >> "$GITHUB_OUTPUT"
 
       - name: Setup Cloud SDK
         uses: google-github-actions/setup-gcloud@v0.2.1
