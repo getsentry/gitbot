@@ -20,13 +20,10 @@ def repo_url(repo: str) -> str:
 
 COMMITTER_NAME = "Sentry Bot"
 COMMITTER_EMAIL = "bot@sentry.io"
-# Used in Github Sentry PRs to sync a getsentry branch
-GITBOT_MARKER = "#sync-getsentry"
 
 # App behaviour
 DRY_RUN = os.environ.get("DRY_RUN", "False") == "True"
 ENV = os.environ.get("ENV", "development")
-IS_DEV = ENV == "development"
 
 # Secrets
 PAT = os.environ.get("GITBOT_PAT")
@@ -62,5 +59,4 @@ GETSENTRY_REPO = os.environ.get("GETSENTRY_REPO", "getsentry/getsentry-test-repo
 GETSENTRY_REPO_URL = repo_url(GETSENTRY_REPO)
 SENTRY_CHECKOUT_PATH = "/tmp/sentry"
 SENTRY_REPO = os.environ.get("SENTRY_REPO", "getsentry/sentry-test-repo")
-SENTRY_REPO_UPSTREAM = os.environ.get("SENTRY_REPO_UPSTREAM", "getsentry/sentry")
 SENTRY_REPO_URL = repo_url(SENTRY_REPO)

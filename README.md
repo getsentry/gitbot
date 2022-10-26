@@ -5,8 +5,6 @@ This service allows reverting Git changes in Sentry/Getsentry and updates the re
 If a push happens on Sentry's master, this will clone getsentry and call `bin/bump-sentry` in order to update
 the Sentry's sha on getsentry.
 
-If a PR is opened/synchronized on Sentry and `#sync-getsentry` appears in the first message of the PR, the bot will try to bump the version on getsentry for a branch with the same name as the one on Sentry. This keeps both PRs synchronized and is useful for staging deployments. More details [here](https://www.notion.so/sentry/sync-getsentry-95a32dabe03b467bb3ec5fa0e20491e5).
-
 ## Deployment
 
 Production deployment: `https://sentry-deploy-sync-hook-dwunkkvj6a-uc.a.run.app`
@@ -42,13 +40,6 @@ Testing pushes:
 - From here on, pushes to that branch (or `master`) will be processed by the backend
 - You can use this command: `echo "$(date)" > file && git add file && git commit -m "Foo" --no-verify && git push` to trigger a push
   - Check the output of the backend to see if it succeeds
-
-Testing PR syncs:
-
-- On your sentry repo and the `getsentry-test-repo`(or a repo you define with `GETSENTRY_REPO`) create a branch named `test-pr` (name it anything but `test-branch`)
-- Push both branches to your Sentry fork and your getsentry test repo
-- On Sentry (or your fork), open a PR with the word `#sync-getsentry`
-  - Any subsequent pushes to that Sentry branch will trigger a bump on the `GETSENTRY_REPO`
 
 Testing that it can fetch Google Secrets:
 
