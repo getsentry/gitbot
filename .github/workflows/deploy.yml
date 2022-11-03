@@ -72,7 +72,7 @@ jobs:
           region: us-central1
 
       - name: Sentry Release
-        uses: getsentry/action-release@v1.1.5
+        uses: getsentry/action-release@v1.2.1
         # If we want to compare a release from a deployed PR we should report it, otherwise,
         # it would only show up in the Sentry SaaS if an error occurred
         with:
