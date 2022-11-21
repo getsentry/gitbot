@@ -1,3 +1,11 @@
+# DEPRECATED
+
+we've decided to sunset `gitbot` and replaced its functionality with some GitHub actions and [action-fast-revert]
+
+[action-fast-revert]: https://github.com/getsentry/action-fast-revert/
+
+___
+
 # Git Bot Service
 
 This service allows reverting Git changes in Sentry/Getsentry and updates the reference in getsentry to sentry automatically. There's two ways that the latter happens:
